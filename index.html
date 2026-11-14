@@ -561,7 +561,7 @@ function defSave(){return{ink:0,upg:{hp:0,dmg:0,time:0,relic:0},m:{},best:0,runs
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return Object.assign(defSave(),s)}catch(e){}return defSave()}
 let save=load();
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
-function master(w,ok){const m=save.m[w.w]||(save.m[w.w]={s:0,n:0,c:0});m.seen=1;if(typeof logAnswer==='function')logAnswer();if(ok){m.s=Math.min(5,m.s+1);m.c=(m.c||0)+1;if(m.n&&m.c>=2)m.n=0}else{m.s=Math.max(0,m.s-2);m.n=1;m.c=0;m.x=(m.x||0)+1;m.lx=dayNum()}m.due=dayNum()+(ok?INTV[m.s]:0)}
+function master(w,ok){const m=save.m[w.w]||(save.m[w.w]={s:0,n:0,c:0});m.seen=1;if(typeof logAnswer==='function')logAnswer();if(ok){m.s=Math.min(5,m.s+1);m.c=(m.c||0)+1;if(m.n&&m.c>=2)m.n=0}else{m.s=Math.max(0,m.s-2);m.n=1;m.c=0;m.x=(m.x||0)+1;m.lx=dayNum()}m.due=dayNum()+(ok?INTV[m.s]:0);m.t=Date.now()}
 
 // ===== AUDIO / FX =====
 let AC=null;
@@ -2238,23 +2238,37 @@ function myProfile(){
 }
 function scheduleSync(){if(!SYNC.on)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(pushMine,2500)}
 async function pushMine(){
- if(!SYNC.on||SYNC.needLogin)return;clearTimeout(SYNC.timer);const prof=myProfile(),sv=JSON.stringify(save),key=JSON.stringify(prof)+sv;if(key===SYNC.lastSent)return;
+ if(!SYNC.on||SYNC.needLogin)return;clearTimeout(SYNC.timer);if(SYNC.myCloud)adoptCloud(SYNC.myCloud);const prof=myProfile(),sv=JSON.stringify(save),key=JSON.stringify(prof)+sv;if(key===SYNC.lastSent)return;
  try{await SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).set({...prof,sv,svt:save.svt||Date.now(),ts:Date.now()});SYNC.lastSent=key;SYNC.cloudOk=Date.now()}catch(e){console.warn('sync',e)}
 }
-// 雲端還原：本機是空的、或雲端比較新 → 用雲端的進度
+// ===== 雲端合併：兩邊的進度一個字一個字合併，只會多不會少 =====
+const cntSeen=x=>Object.values((x&&x.m)||{}).filter(m=>m&&m.seen).length;
+function pickWord(a,b){if(!a)return b;if(!b)return a;if(!!a.seen!==!!b.seen)return a.seen?a:b;const ta=a.t||0,tb=b.t||0;if(ta!==tb)return ta>tb?a:b;const ca=(a.c||0)+(a.x||0),cb=(b.c||0)+(b.x||0);if(ca!==cb)return ca>cb?a:b;return (a.s||0)>=(b.s||0)?a:b}
+function mergeSaves(L,C){
+ if(!C||typeof C!=='object'||!C.m)return L;if(!L||!L.m)return Object.assign(defSave(),C);
+ const lS=cntSeen(L),cS=cntSeen(C),lT=+L.svt||0,cT=+C.svt||0;
+ // 名字、花等設定：用字比較多的那份；一樣多就用比較新的
+ const base=(cS>lS||(cS===lS&&cT>lT))?C:L,other=base===L?C:L;
+ const out=JSON.parse(JSON.stringify(Object.assign(defSave(),base)));
+ const m={};for(const k of new Set([...Object.keys(L.m),...Object.keys(C.m)]))m[k]=JSON.parse(JSON.stringify(pickWord(L.m[k],C.m[k])));out.m=m;
+ const dl={};for(const x of [L.daylog||{},C.daylog||{}])for(const k in x)dl[k]=Math.max(dl[k]||0,+x[k]||0);out.daylog=dl;
+ const vs={};for(const g of [...(L.vase||[]),...(C.vase||[])])if(g&&g.ts)vs[g.ts]=g;out.vase=Object.values(vs).sort((a,b)=>a.ts-b.ts).slice(-60);
+ const go=[L.giftOut,C.giftOut].filter(Boolean).sort((a,b)=>(b.ts||0)-(a.ts||0))[0];if(go)out.giftOut=go;
+ for(const k of ['giftSeen','giftsSent','wkShown','bond','total','correct','svt'])out[k]=Math.max(+L[k]||0,+C[k]||0);
+ out.rl=[...new Set([...(base.rl||[]),...(other.rl||[])])].slice(0,10);
+ return out;
+}
+function adoptCloud(d){
+ if(!d||typeof d.sv!=='string')return false;let C;try{C=JSON.parse(d.sv)}catch(e){return false}
+ const before=JSON.stringify(save),lS=cntSeen(save);
+ const M=mergeSaves(save,C);if(JSON.stringify(M)===before)return false;
+ save=M;_persist();
+ if(!R){const open=$('#modalRoot').innerHTML;if(!open||lS===0){$('#modalRoot').innerHTML='';modalDone=null;den()}}
+ if(lS===0&&cntSeen(save)>0)toast('☁️ 已從雲端找回你的花園');
+ return true;
+}
 async function restoreFromCloud(){
- try{
-  const snap=await SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).get({source:'server'});
-  if(!snap.exists)return;const d=snap.data();if(!d||typeof d.sv!=='string')return;
-  const cloud=JSON.parse(d.sv);if(!cloud||typeof cloud!=='object'||!cloud.m)return;
-  const cSeen=Object.values(cloud.m).filter(m=>m&&m.seen).length,lSeen=seenCount();
-  const cT=+d.svt||0,lT=+save.svt||0;
-  if((lSeen===0&&cSeen>0)||(cT>lT&&cSeen>=lSeen-5)){
-   save=Object.assign(defSave(),cloud);_persist();
-   if(!R){$('#modalRoot').innerHTML='';modalDone=null;den()}
-   if(lSeen===0)toast('☁️ 已從雲端找回你的花園');
-  }
- }catch(e){console.warn('restore',e)}
+ try{const snap=await SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).get({source:'server'});if(snap.exists)adoptCloud(snap.data())}catch(e){console.warn('restore',e)}
 }
 function onPartner(raw){setTimeout(partnerEvents,600);
  const prev=SYNC.partner,d=sanitizePartner(raw);SYNC.partner=d;SYNC.ready=true;
@@ -2277,6 +2291,7 @@ async function initSync(){
   SYNC.needLogin=ROLE==='j'&&!isJUser(u);
   SYNC.db=firebase.firestore();
   await restoreFromCloud();SYNC.on=true;
+  SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).onSnapshot(s=>{if(s.metadata&&s.metadata.hasPendingWrites)return;SYNC.myCloud=s.exists?s.data():null;if(SYNC.myCloud&&!R)adoptCloud(SYNC.myCloud)},e=>console.warn('self',e));
   SYNC.db.doc(`pairs/${PAIR}/players/${partnerIdOf()}`).onSnapshot(s=>onPartner(s.exists?s.data():null),e=>console.warn('sync',e));
   pushMine();
  }catch(e){console.warn('sync init',e)}
