@@ -1966,12 +1966,12 @@ function onboard(){
  <div class="small" style="text-align:center">最喜歡哪一種花？</div>
  <div class="coats">${FKEYS.map(k=>`<button class="coat ${k===obFlower?'on':''}" data-a="obcoat" data-v="${k}"><i style="background:none;box-shadow:none;border:none;width:26px;height:36px">${flowerSVG(k,4)}</i><span>${FLOWERS[k].n}</span></button>`).join('')}</div>
  <div class="small" style="text-align:center;margin-top:8px">幫花園取個名字</div>
- <input id="obname" class="inp" maxlength="10" value="${esc(p.gname||'小小花園')}" style="text-align:center;font-size:18px">
+ <input id="obname" class="inp" maxlength="10" value="${esc(p.gname||(ROLE==='j'?'晴耕雨讀':'小小花園'))}" style="text-align:center;font-size:18px">
  <button class="btn gold" data-a="obdone">開始種花！</button>`);
 }
 function obPick(v){obFlower=v;document.querySelectorAll('.coat').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
 function obDone(){const p=pet(),v=($('#obname').value||'').trim();p.gname=(v||'小小花園').slice(0,10);p.flower=obFlower;persist();$('#modalRoot').innerHTML='';modalDone=null;SFX.relic();confetti();den()}
-function rename(){const p=pet();openModal(`<div class="banner" style="margin-top:0">✏️ 花園的名字</div><input id="pname" maxlength="10" value="${esc(p.gname||'')}" class="inp" style="text-align:center;font-size:18px"><button class="btn gold" data-a="saveName">確定</button>`);modalDone=den}
+function rename(){const p=pet();openModal(`<div class="banner" style="margin-top:0">✏️ 花園的名字</div><div class="sub">隨時都可以改，對方那邊也會跟著更新</div><input id="pname" maxlength="10" value="${esc(p.gname||'')}" class="inp" style="text-align:center;font-size:18px"><button class="btn gold" data-a="saveName">確定</button>`);modalDone=den}
 function saveName(){const v=($('#pname').value||'').trim();if(v){pet().gname=v.slice(0,10);persist()}closeModal()}
 function photo(){
  const p=pet(),d=new Date(),f=partner(),pts=bloomPts();
@@ -2161,11 +2161,11 @@ function onboard(){
  <div class="small" style="text-align:center">最喜歡哪一種花？（會成為你的主花圃，這種花的字會比較常出現，之後也可以換）</div>
  <div class="obfl">${FL_IDS.map(k=>`<button class="coat ${k===obFlower2?'on':''}" data-a="obcoat" data-v="${k}"><i style="background:none;box-shadow:none;border:none;width:24px;height:34px">${flowerSVG(k,4)}</i><span>${FL[k].n}</span></button>`).join('')}</div>
  <div class="small" style="text-align:center;margin-top:8px">幫花園取個名字</div>
- <input id="obname" class="inp" maxlength="10" value="${esc(p.gname||'小小花園')}" style="text-align:center;font-size:18px">
+ <input id="obname" class="inp" maxlength="10" value="${esc(p.gname||(ROLE==='j'?'晴耕雨讀':'小小花園'))}" style="text-align:center;font-size:18px">
  <button class="btn gold" data-a="obdone">開始種花！</button>`);
 }
 function obPick(v){obFlower2=v;document.querySelectorAll('.coat').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
-function obDone(){const p=pet(),v=($('#obname').value||'').trim();p.gname=(v||'小小花園').slice(0,10);p.flower=obFlower2;persist();$('#modalRoot').innerHTML='';modalDone=null;SFX.relic();confetti();den()}
+function obDone(){const p=pet(),v=($('#obname').value||'').trim();p.gname=(v||(ROLE==='j'?'晴耕雨讀':'小小花園')).slice(0,10);p.flower=obFlower2;persist();$('#modalRoot').innerHTML='';modalDone=null;SFX.relic();confetti();den()}
 
 // ===== 🌿 更明顯的陪伴度 =====
 const BSTEP=[['🚪','關著的小門'],['🌱','小門打開一條縫'],['🌿','藤蔓爬滿圍籬'],['🪑','圍籬邊一起坐的長椅'],['💮','花拱門連起兩座花園'],['🌸','圍籬消失，兩座花園連成一座']];
@@ -2346,7 +2346,7 @@ const _den3=den;
 den=function(){
  if(VIEWP&&SYNC.on)return pden();
  _den3();
- const t=document.querySelector('.top b.cute');if(t&&pet().gname)t.innerHTML=`🌸 ${esc(myLabel())}`;
+ const t=document.querySelector('.top b.cute');if(t&&pet().gname){t.innerHTML=`🌸 ${esc(myLabel())}`;t.insertAdjacentHTML('afterend','<button class="small" data-a="rename" style="margin-right:auto;margin-left:4px">✏️</button>')}
  if(SYNC.on){const top=document.querySelector('.top');if(top)top.insertAdjacentHTML('afterend',vtogHTML()+raceHTML())}
 };
 {const _ob=onboard;onboard=function(){if(pet().gname)return;_ob()}}
