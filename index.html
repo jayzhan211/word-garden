@@ -2213,7 +2213,9 @@ function wipeHer(){persist();ROLE='her';try{localStorage.setItem('lb_role','her'
 // ======================= 🔗 即時同步（GitHub Pages + Firebase 版本才會啟用）=======================
 const FB_CONFIG=window.__FB_CONFIG||null;
 const PAIR='HDzAwqJ7yVFqTTgJX3o1LMU3';
-const SYNC={on:false,db:null,partner:null,lastSent:'',timer:null,ready:false};
+const SYNC={on:false,db:null,partner:null,lastSent:'',timer:null,ready:false,needLogin:false,user:null};
+const J_UID='';// 傑的 Google 帳號 UID（第一次登入後填入）
+const isJUser=u=>!!u&&!u.isAnonymous&&(!J_UID||u.uid===J_UID);
 const myId=()=>ROLE==='j'?'j':'her',partnerIdOf=()=>ROLE==='j'?'her':'j';
 const NM={j:'傑',her:'彣'};
 const glabel=(id,g)=>g?`${NM[id]}-${g}`:`${NM[id]}的花園`;
@@ -2232,11 +2234,11 @@ function myProfile(){
  const p=pet(),beds={},tmp={};
  for(const k in save.m){const m=save.m[k];if(!m||!m.seen||!byW[k])continue;const sp=speciesOf(byW[k]);(tmp[sp]=tmp[sp]||[]).push(m.n?'wilt':(m.s||0))}
  for(const sp in tmp){const a=tmp[sp],w=a.filter(x=>x==='wilt'),o=a.filter(x=>x!=='wilt').sort((x,y)=>y-x);beds[sp]=w.slice(0,2).concat(o).slice(0,6)}
- return{v:1,gname:p.gname||'',flower:p.flower||'',seen:seenCount(),pts:bloomPts(),c:gCounts(),beds,order:Object.keys(tmp).sort((a,b)=>tmp[b].length-tmp[a].length),rl:(save.rl||[]).slice(0,10),bond:save.bond||0,day:dayNum(),td:dayCount(0),wk:weekCount(),stk:liveStreak(),gift:save.giftOut||null,wl:myWeeks()};
+ return{v:1,gname:p.gname||'',flower:p.flower||'',seen:seenCount(),pts:bloomPts(),c:gCounts(),beds,order:Object.keys(tmp).sort((a,b)=>tmp[b].length-tmp[a].length),rl:(save.rl||[]).slice(0,10),bond:save.bond||0,day:dayNum(),td:dayCount(0),wk:weekCount(),stk:liveStreak(),gift:save.giftOut||null,wl:myWeeks(),...(ROLE==='j'&&SYNC.user&&!SYNC.user.isAnonymous?{uid:SYNC.user.uid}:{})};
 }
 function scheduleSync(){if(!SYNC.on)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(pushMine,2500)}
 async function pushMine(){
- if(!SYNC.on)return;clearTimeout(SYNC.timer);const prof=myProfile(),sv=JSON.stringify(save),key=JSON.stringify(prof)+sv;if(key===SYNC.lastSent)return;
+ if(!SYNC.on||SYNC.needLogin)return;clearTimeout(SYNC.timer);const prof=myProfile(),sv=JSON.stringify(save),key=JSON.stringify(prof)+sv;if(key===SYNC.lastSent)return;
  try{await SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).set({...prof,sv,svt:save.svt||Date.now(),ts:Date.now()});SYNC.lastSent=key;SYNC.cloudOk=Date.now()}catch(e){console.warn('sync',e)}
 }
 // 雲端還原：本機是空的、或雲端比較新 → 用雲端的進度
@@ -2265,7 +2267,14 @@ function refreshGardenLive(){if(R||document.querySelector('#modalRoot .modal'))r
 async function initSync(){
  if(!FB_CONFIG||!window.firebase)return;
  try{
-  firebase.initializeApp(FB_CONFIG);await firebase.auth().signInAnonymously();
+  firebase.initializeApp(FB_CONFIG);const A=firebase.auth();
+  try{await A.getRedirectResult()}catch(e){console.warn('redirect',e)}
+  let u=await new Promise(res=>{const un=A.onAuthStateChanged(x=>{un();res(x)})});
+  if(u&&!u.isAnonymous&&!isJUser(u)){await A.signOut();u=null;setTimeout(()=>toast('這個 Google 帳號不是傑的，已登出'),800)}
+  if(!u){await A.signInAnonymously();u=A.currentUser}
+  SYNC.user=u;
+  if(isJUser(u)&&ROLE!=='j'){try{localStorage.setItem('lb_role','j')}catch(e){}location.reload();return}
+  SYNC.needLogin=ROLE==='j'&&!isJUser(u);
   SYNC.db=firebase.firestore();
   await restoreFromCloud();SYNC.on=true;
   SYNC.db.doc(`pairs/${PAIR}/players/${partnerIdOf()}`).onSnapshot(s=>onPartner(s.exists?s.data():null),e=>console.warn('sync',e));
@@ -2487,8 +2496,34 @@ den=function(){
  if(SYNC.on)setTimeout(partnerEvents,700);
 };
 
+// ===== 🔑 傑用 Google 登入 =====
+async function googleLogin(){
+ if(!window.firebase||!firebase.apps.length)return toast('連上網路才能登入');
+ const P=new firebase.auth.GoogleAuthProvider();P.setCustomParameters({prompt:'select_account'});
+ try{const r=await firebase.auth().signInWithPopup(P);
+  if(!isJUser(r.user)){await firebase.auth().signOut();await firebase.auth().signInAnonymously();return toast('這個 Google 帳號不是傑的')}
+  try{localStorage.setItem('lb_role','j')}catch(e){}persist();location.reload();
+ }catch(e){
+  if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')){try{localStorage.setItem('lb_role','j')}catch(_){}return firebase.auth().signInWithRedirect(P)}
+  if(e&&e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request')toast('登入失敗：'+(e.code||e.message));
+ }
+}
+async function googleLogout(){
+ try{await pushMine();await firebase.auth().signOut()}catch(e){}
+ try{localStorage.setItem('lb_role','her')}catch(e){}location.reload();
+}
+function accountMenu(){
+ const u=SYNC.user,gj=isJUser(u);
+ openModal(`<div class="banner" style="margin-top:0">🔑 帳號</div>
+ <div class="sub">這台裝置目前是：<b>${NM[myId()]}</b>${gj?`<br><span class="small">已用 Google 登入（${esc(u.displayName||'傑')}）</span>`:''}</div>
+ ${gj?`<button class="btn ghost" data-a="glogout">登出（這台裝置會變回彣）</button>`:`<button class="btn gold" data-a="glogin">我是傑，用 Google 登入</button><div class="small" style="text-align:center">登入之後，任何裝置都會認得你是傑</div>`}
+ <button class="btn ghost" data-a="closeModal">取消</button>`)}
+{const _tt=titleTap;titleTap=function(){if(!SYNC.on&&!window.__FB_CONFIG)return _tt();const t=Date.now();tapN=t-tapT<700?tapN+1:1;tapT=t;if(tapN>=5){tapN=0;accountMenu()}}}
+{const _d5=den;den=function(){_d5();if(SYNC.needLogin&&!VIEWP){const top=document.querySelector('.top');if(top)top.insertAdjacentHTML('afterend',`<div class="pwa" data-a="glogin" style="background:#fff3e6;border-color:#ffd59e"><span>🔑</span><b>這台裝置還沒登入，傑的進度不會存到雲端。點這裡用 Google 登入</b></div>`)}}}
+
 // ===== EVENTS =====
 const ACT={
+ glogin:googleLogin,glogout:googleLogout,
  pwa:pwaGuide,pwax:pwaX,pwadone:()=>{save.pwaHint=1;persist();closeModal()},gift:giftOpen,gpick:giftPick,gword:giftWord,gsend:giftSend,giftback:()=>{$('#modalRoot').innerHTML='';modalDone=null;giftOpen()},vase:vaseOpen,wbook:wrongBook,wplay:wrongPlay,autosay:autoSayToggle,
  favpick:favPick,favset:favSet,
  vtog,duelm:duelModal,
