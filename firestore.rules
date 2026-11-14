@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /pairs/{pair}/players/{player} {
+      allow read: if request.auth != null && pair == 'HDzAwqJ7yVFqTTgJX3o1LMU3';
+      allow write: if request.auth != null && pair == 'HDzAwqJ7yVFqTTgJX3o1LMU3'
+                   && player in ['j', 'her']
+                   && request.resource.data.keys().size() < 30;
+    }
+  }
+}
