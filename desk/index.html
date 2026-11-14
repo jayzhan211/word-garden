@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>英文編輯台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Literata:opsz,wght@7..72,400;7..72,600&family=Newsreader:opsz,wght@6..72,600;6..72,700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a press passport. Navy cover band, cool paper pages, real headlines as boarding cards, and an ink stamp for every story read. Mobile-first single column. */
+:root{
+  --paper:#eceff3; --card:#fdfdfc; --ink:#18202e; --muted:#5b6578; --line:#d4d9e1;
+  --navy:#1f3360; --navy-soft:#dde4f2; --accent:#c8402f; --accent-soft:#f7e2dd;
+  --gold:#b98d2c;
+  --good:#257a4e; --good-soft:#dcf0e3; --warn:#9b6a12; --warn-soft:#f5ebd2; --bad:#b23535; --bad-soft:#f7dede;
+  --s1:#c8402f; --s2:#2856a8; --s3:#2a7a57; --s4:#6a4a9e; --s5:#a8701a;
+  --f-head:"Newsreader",Georgia,serif; --f-ui:"Noto Sans TC","PingFang TC",system-ui,sans-serif; --f-read:"Literata",Georgia,serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#11151d; --card:#191f2a; --ink:#e4e8ef; --muted:#9aa4b6; --line:#2b3342;
+  --navy:#8fa8dc; --navy-soft:#1f2a42; --accent:#ec8370; --accent-soft:#3e2420; --gold:#d8b25a;
+  --good:#7ccf9c; --good-soft:#1b3727; --warn:#e2b65c; --warn-soft:#382d16; --bad:#ee8f8f; --bad-soft:#3f2222;
+  --s1:#ef8a76; --s2:#82a7ee; --s3:#76c6a0; --s4:#b59be6; --s5:#e0b25e;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#11151d; --card:#191f2a; --ink:#e4e8ef; --muted:#9aa4b6; --line:#2b3342;
+  --navy:#8fa8dc; --navy-soft:#1f2a42; --accent:#ec8370; --accent-soft:#3e2420; --gold:#d8b25a;
+  --good:#7ccf9c; --good-soft:#1b3727; --warn:#e2b65c; --warn-soft:#382d16; --bad:#ee8f8f; --bad-soft:#3f2222;
+  --s1:#ef8a76; --s2:#82a7ee; --s3:#76c6a0; --s4:#b59be6; --s5:#e0b25e;
+  color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--navy)}
+:focus-visible{outline:2px solid var(--navy);outline-offset:2px;border-radius:6px}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px 96px}
+header.top{display:flex;align-items:center;gap:12px;padding:6px 0 12px}
+.emblem{width:46px;height:46px;flex:none;border-radius:50%;border:2px solid var(--gold);display:grid;place-items:center;color:var(--gold)}
+.emblem svg{width:30px;height:30px}
+.brand h1{font-family:var(--f-ui);font-weight:700;font-size:21px;margin:0;letter-spacing:3px}
+.brand p{margin:0;color:var(--muted);font-size:13px;font-family:var(--f-head);font-style:italic}
+nav.tabs{display:flex;gap:4px;background:var(--navy);border-radius:14px;padding:5px;margin-bottom:16px;position:sticky;top:8px;z-index:5;box-shadow:0 4px 14px rgba(20,30,60,.18)}
+nav.tabs button{flex:1;border:0;background:transparent;border-radius:10px;padding:8px 2px;font-size:14px;color:rgba(255,255,255,.75);font-weight:500;white-space:nowrap}
+:root[data-theme="dark"] nav.tabs button{color:rgba(10,16,30,.7)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) nav.tabs button{color:rgba(10,16,30,.7)}}
+nav.tabs button.on{background:var(--card);color:var(--navy)}
+nav.tabs .dot{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--accent);color:#fff;font-size:11px;line-height:18px}
+h2{font-family:var(--f-ui);font-weight:700;font-size:18px;margin:22px 0 10px;text-wrap:balance}
+h3{font-size:15px;margin:0 0 4px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center}
+.stat b{display:block;font-family:var(--f-mono);font-weight:600;font-size:21px;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat span{font-size:12px;color:var(--muted)}
+@media (max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}}
+.btn{display:inline-block;text-align:center;text-decoration:none;border:0;border-radius:12px;padding:11px 18px;font-weight:700;background:var(--navy);color:var(--card)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--accent)}
+.btn.wide{display:block;width:100%}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--navy-soft);color:var(--navy);font-weight:500;white-space:nowrap}
+.chip.red{background:var(--accent-soft);color:var(--accent)}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:20px 0 8px}
+.sec-head h2{margin:0}
+/* news cards: boarding-pass style */
+.cards{display:flex;flex-direction:column;gap:10px}
+.ncard{position:relative;display:grid;grid-template-columns:1fr auto;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden}
+.ncard:hover{border-color:var(--navy)}
+.ncard .main{padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.ncard .src{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ncard .hl{font-family:var(--f-head);font-weight:700;font-size:18px;line-height:1.25;text-wrap:balance}
+.ncard .zh{font-size:13px;color:var(--muted)}
+.ncard .stub{border-left:2px dashed var(--line);padding:12px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:84px;font-family:var(--f-mono);font-size:11px;color:var(--muted);text-align:center}
+.ncard .stub b{font-size:15px;color:var(--ink)}
+.ncard.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.ncard.rec::before{content:"今日推薦";position:absolute;top:0;right:96px;background:var(--accent);color:#fff;font-size:11px;padding:1px 8px;border-radius:0 0 8px 8px}
+.ncard.done .stub{color:var(--good)}
+.meta-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.stars{color:var(--gold);letter-spacing:1px;font-size:13px}
+.stars .off{color:var(--line)}
+details.more{margin-top:14px}
+details.more>summary{cursor:pointer;font-weight:700;color:var(--navy);padding:6px 0}
+.slips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}
+@media (max-width:520px){.slips{grid-template-columns:1fr}}
+.slip{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.slip .en{font-family:var(--f-head);font-weight:600;font-size:15px;line-height:1.3}
+.slip .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:6px;margin:4px 0 14px}
+.steps div{flex:1;text-align:center;font-size:12px;padding:6px 0;border-radius:8px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.steps div.on{background:var(--navy);border-color:var(--navy);color:var(--card);font-weight:700}
+.steps div.past{background:var(--navy-soft);color:var(--navy);border-color:transparent}
+.art-title{font-family:var(--f-head);font-weight:700;font-size:25px;line-height:1.22;margin:6px 0 2px;text-wrap:balance}
+.passage{font-family:var(--f-read);font-size:18px;line-height:1.75;max-width:65ch}
+.passage p{margin:0 0 1em}
+.pnum{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-right:6px;vertical-align:2px}
+.w{cursor:pointer;border-radius:3px}
+.w:hover{background:var(--navy-soft)}
+.w.gl{text-decoration:underline dotted var(--navy);text-underline-offset:4px;text-decoration-thickness:1.5px}
+.hints-off .w.gl{text-decoration:none}
+.w.inj{background:var(--warn-soft)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.toggle input{accent-color:var(--navy);width:18px;height:18px}
+.vgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media (max-width:420px){.vgrid{grid-template-columns:1fr}}
+.vitem{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.vitem b{font-family:var(--f-read);font-weight:600}
+.vitem span{font-size:13px;color:var(--muted);text-align:right}
+.vitem.inj{border-color:var(--warn);background:var(--warn-soft)}
+.para-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.para-card .lab{font-size:12px;color:var(--muted);margin-bottom:4px}
+.sent{font-family:var(--f-read);font-size:17px;line-height:1.65;display:inline;border-radius:6px;padding:1px 2px;cursor:pointer;transition:background .15s}
+.sent:hover{background:var(--navy-soft)}
+.sent.pick{background:var(--navy);color:var(--card)}
+.sent.ok{background:var(--good-soft);box-shadow:inset 0 -2px 0 var(--good)}
+.sent.half{background:var(--warn-soft);box-shadow:inset 0 -2px 0 var(--warn)}
+.sent.no{background:var(--bad-soft);text-decoration:line-through;text-decoration-color:var(--bad)}
+.locked .sent{cursor:default}
+.kp{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;font-family:var(--f-read);font-size:16px;line-height:1.45}
+.kp .box{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;font-family:var(--f-ui);color:var(--card)}
+.kp.pick{border-color:var(--navy)} .kp.pick .box{background:var(--navy);border-color:var(--navy)}
+.kp.ok{border-color:var(--good);background:var(--good-soft)} .kp.ok .box{background:var(--good);border-color:var(--good)}
+.kp.miss{border-color:var(--warn);background:var(--warn-soft)} .kp.miss .box{border-color:var(--warn)}
+.kp.no{border-color:var(--bad);background:var(--bad-soft)} .kp.no .box{background:var(--bad);border-color:var(--bad)}
+.kp:disabled{cursor:default}
+.fb{margin-top:8px;font-size:14px;padding:8px 10px;border-radius:10px;background:var(--paper)}
+.fb b.ok{color:var(--good)} .fb b.half{color:var(--warn)} .fb b.no{color:var(--bad)}
+.q-text{font-family:var(--f-read);font-size:18px;line-height:1.5;margin:6px 0 12px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;font-family:var(--f-read);font-size:16px;line-height:1.45}
+.opt .L{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;font-weight:600;background:var(--paper);color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--navy)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.right .L{background:var(--good);color:var(--card)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .L{background:var(--bad);color:var(--card)}
+.explain{background:var(--paper);border-radius:12px;padding:10px 12px;font-size:14px;margin:4px 0 12px}
+details.peek{margin-top:16px}
+details.peek summary{cursor:pointer;color:var(--navy);font-weight:500;font-size:14px}
+details.peek .passage{font-size:15px;margin-top:8px}
+.result{text-align:center}
+.result .big-stars{font-size:38px;color:var(--gold);letter-spacing:6px}
+.result .big-stars .off{color:var(--line)}
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+@media (max-width:420px){.rgrid{grid-template-columns:repeat(2,1fr)}}
+/* passport stamps */
+.visa{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;background-image:repeating-linear-gradient(135deg,transparent 0 14px,rgba(40,86,168,.035) 14px 15px)}
+.stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 8px;justify-items:center}
+@media (min-width:560px){.stamps{grid-template-columns:repeat(4,1fr)}}
+.stamp{width:104px;height:104px;border-radius:50%;border:3px solid var(--ink-c);color:var(--ink-c);display:grid;place-items:center;padding:6px;opacity:.88;font-family:var(--f-mono);text-transform:uppercase;text-align:center;position:relative;background:none}
+.stamp::after{content:"";position:absolute;inset:5px;border:1.5px dashed var(--ink-c);border-radius:50%;opacity:.7}
+.stamp.sq{border-radius:12px}.stamp.sq::after{border-radius:8px}
+.stamp .t{font-size:11px;font-weight:600;line-height:1.15;letter-spacing:.04em;overflow-wrap:anywhere}
+.stamp .d{font-size:10px;margin:3px 0;border-top:1.5px solid var(--ink-c);border-bottom:1.5px solid var(--ink-c);padding:1px 4px}
+.stamp .b{font-size:9px;letter-spacing:.06em;line-height:1.1}
+.stamp.new{animation:thud .45s ease-out}
+@keyframes thud{0%{transform:scale(1.6) rotate(var(--r));opacity:0}70%{transform:scale(.95) rotate(var(--r));opacity:.95}100%{transform:scale(1) rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){.stamp.new{animation:none}}
+.empty-visa{font-size:14px;color:var(--muted);text-align:center;padding:24px 8px}
+/* jar */
+.jar-list{display:flex;flex-direction:column;gap:6px}
+.jw{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.jw .wd{font-family:var(--f-read);font-weight:600;min-width:0;flex:1;overflow-wrap:anywhere}
+.jw .zh{color:var(--muted);font-size:14px;flex:1.3;overflow-wrap:anywhere}
+.pips{display:flex;gap:3px}
+.pips i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.pips i.on{background:var(--navy)}
+.xbtn{border:0;background:transparent;color:var(--muted);font-size:18px;padding:0 4px}
+.rv-ctx{font-family:var(--f-read);font-size:17px;line-height:1.65;background:var(--paper);border-radius:12px;padding:12px}
+.rv-ctx mark{background:var(--warn-soft);color:inherit;padding:0 2px;border-radius:3px;font-weight:600}
+.rv-word{font-family:var(--f-read);font-size:30px;font-weight:600;text-align:center;margin:6px 0}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:720px;border-radius:20px 20px 0 0;padding:18px 18px 26px;box-shadow:0 -8px 30px rgba(0,0,0,.15)}
+.sheet .sw{font-family:var(--f-read);font-size:26px;font-weight:600}
+.sheet input[type=text]{width:100%}
+textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);resize:vertical}
+input[type=text],input[type=url]{border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--card);width:100%}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--navy-soft);border-top-color:var(--navy);border-radius:50%;animation:spin 1s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tip-list{margin:6px 0 0;padding-left:20px;font-size:14px}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:9px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:90%}
+.wishlist .jw a{overflow-wrap:anywhere}
+.board{border-left:4px solid var(--accent)}
+.mini-stats{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px;color:var(--muted)}.mini-stats b{color:var(--ink);font-family:var(--f-mono)}
+.rec-card .hl2{font-family:var(--f-head);font-weight:700;font-size:17px;line-height:1.3;margin-top:2px}
+.rec-card .note2{font-size:14px;margin-top:4px}
+.react{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;font-size:13px}
+.react:hover{border-color:var(--navy)}
+.chip.pt{background:var(--accent-soft);color:var(--accent)}
+
+.bar{height:8px;border-radius:4px;background:var(--navy-soft);margin:8px 0 4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--navy);border-radius:4px}
+.memo{background:var(--warn-soft);border-left:4px solid var(--gold);border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}
+.letter{font-size:13px;color:var(--accent);font-weight:700;margin-top:6px}
+.opt.hd span:last-child{font-family:var(--f-head);font-weight:600;font-size:17px}
+.kp .note{display:block;margin-top:8px;font-family:var(--f-ui);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="emblem" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="16" cy="16" r="12"/><ellipse cx="16" cy="16" rx="5.5" ry="12"/><path d="M4 16h24M6 10h20M6 22h20"/></svg></div>
+    <div class="brand"><h1>英文編輯台</h1><p>Today’s news, on your desk.</p></div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="主選單"></nav>
+  <main id="app"></main>
+  <div class="foot">稿件根據真實時事原創撰寫並列出來源；外電全文請到原網站閱讀。題目與解析為本遊戲自行撰寫。</div>
+</div>
+<div id="layer"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>window.__FB_CONFIG={ apiKey: "AIzaSyCyjyTwemd7VuuaWL8IzKqzxbQvvidEcBg", authDomain: "word-garden-2a5cc.firebaseapp.com", projectId: "word-garden-2a5cc", storageBucket: "word-garden-2a5cc.firebasestorage.app", messagingSenderId: "50114694819", appId: "1:50114694819:web:e9119133c6770a8e1db916", measurementId: "G-SDM13WWPMG" };</script>
+<script src="news.js"></script>
+<script>
+/* ===== Built-in practice passages: original articles written for this game ===== */
+const PASSAGES = [
+{ id:"p1", lv:1, title:"Your Body Has a Clock", zh:"身體裡的時鐘", topic:"睡眠・生理",
+  paras:[
+   {s:["Almost every cell in your body keeps time.","Deep inside the brain, a tiny cluster of nerve cells acts as a master clock, sending signals that tell the rest of the body when to wake, eat and sleep.","Scientists call this daily cycle the circadian rhythm, from Latin words meaning “about a day”."],k:1,a:[0],w:"第一句只是開場吸引注意；第二句才講出本段核心：大腦裡有個主時鐘在指揮全身。"},
+   {s:["The most powerful signal for this clock is light.","When morning light enters the eyes, it tells the brain to reduce melatonin, a hormone that makes us feel sleepy.","In the evening, as light fades, melatonin levels rise again.","This is why bright screens late at night can confuse the system: the brain mistakes them for daylight."],k:0,a:[],w:"典型的「主題句在段首」：先說光是最強的訊號，後面三句都在解釋光怎麼影響褪黑激素。"},
+   {s:["Problems begin when our lifestyle and our internal clock disagree.","Night-shift workers, for example, often sleep during the day and work when their bodies expect rest.","Studies have linked long-term shift work to a higher risk of obesity, diabetes and heart disease.","Even a weekly mismatch — staying up late on weekends and waking early on Mondays — can produce a mild version of jet lag, which some researchers call “social jet lag”."],k:0,a:[],w:"段首點出問題，接著用 for example 舉例（輪班、社交時差）。看到 for example 就知道後面是支持細節。"},
+   {s:["The good news is that the clock can be reset.","Getting outside in the morning, eating meals at regular times and dimming lights before bed all help to keep it on schedule.","As one sleep researcher put it, the body loves routine; give it a predictable day, and it will reward you with better sleep and more energy."],k:0,a:[2],w:"The good news is… 是轉折訊號，段落重點是「時鐘可以調回來」。最後一句是引言收尾，也算可以。"}
+  ],
+  g:{cluster:"一群；簇",circadian:"晝夜節律的",rhythm:"節律；節奏",melatonin:"褪黑激素",hormone:"荷爾蒙；激素",internal:"內部的",obesity:"肥胖",mismatch:"不一致；錯配",predictable:"可預測的",routine:"規律的作息",signals:"訊號",fades:"漸漸消失"},
+  q:[
+   {y:"main",t:"What is the passage mainly about?",o:["How melatonin is produced in the brain","How the body’s internal clock works and why keeping it on schedule matters","Why night-shift work should be banned","The history of the word “circadian”"],a:1,e:"四段分別講：有時鐘→光控制它→作息不合的後果→如何調回。只有「身體時鐘如何運作、為何要守時」涵蓋全文；褪黑激素、字源都太細，文中也沒主張禁止輪班。"},
+   {y:"detail",t:"According to the passage, what happens when morning light enters the eyes?",o:["Melatonin levels rise","The brain reduces melatonin","The body begins to feel sleepy","The master clock stops working"],a:1,e:"第二段第二句：it tells the brain to reduce melatonin。"},
+   {y:"vocab",t:"The word “mismatch” in paragraph 3 is closest in meaning to",o:["harmony","disagreement","competition","connection"],a:1,e:"mis-（錯）+ match（配對）＝ 不一致。同段第一句 disagree 就是提示。"},
+   {y:"infer",t:"What can be inferred about “social jet lag”?",o:["It only affects people who fly abroad","It can happen without leaving your home time zone","It is more dangerous than shift work","It is caused by eating late at night"],a:1,e:"文中說週末晚睡、週一早起就會出現，不需要出國，所以是 B。"},
+   {y:"purpose",t:"Why does the author mention bright screens in paragraph 2?",o:["To advertise new phones","To give an example of artificial light confusing the body clock","To argue that screens damage the eyes","To explain how melatonin is made"],a:1,e:"螢幕是「人造光讓大腦誤以為是白天」的例子，用來支持本段論點。"}
+  ]},
+{ id:"p2", lv:1, title:"Why Coriander Tastes Like Soap to Some People", zh:"香菜為什麼像肥皂", topic:"遺傳・飲食",
+  paras:[
+   {s:["For many people, coriander is a fresh, bright herb that lifts a bowl of noodles or a plate of tacos.","For others, it tastes unpleasantly like soap.","This sharp divide has puzzled cooks for years, but scientists now believe that part of the answer lies in our genes."],k:2,a:[],w:"前兩句是對比鋪陳，第三句的 but 之後才帶出全文主題：答案部分在基因裡。"},
+   {s:["In 2012, researchers studying the DNA of tens of thousands of volunteers found a small genetic variation linked to the dislike of coriander.","The variation sits near a gene that helps the nose detect certain smells.","Coriander leaves contain chemicals called aldehydes, which are also produced in the making of soap.","People with the variation may be especially sensitive to these chemicals."],k:0,a:[3],w:"段首說「找到一個與討厭香菜有關的基因變異」，後面在解釋機制。最後一句是機制的結論，也可接受。"},
+   {s:["However, genes are not the whole story.","The same study suggested that the variation explains only a small part of why people differ.","Culture and experience matter too: surveys have found that dislike of the herb is more common in regions where it is rarely eaten, and much less common where it appears in daily cooking."],k:0,a:[],w:"However 開頭＝轉折段。主題句就是「基因不是全部」，後面補充文化與經驗。"},
+   {s:["Encouragingly for coriander lovers, the dislike can sometimes fade.","Crushing the leaves releases enzymes that break down some of the soapy-smelling chemicals, and repeated tasting can help the brain link the flavour with pleasant meals.","In other words, your first reaction to a food is not necessarily your last."],k:2,a:[0],w:"In other words 是「換句話說／總結」的訊號，常常就是重點句。第一句也在講同一件事，算對一半。"}
+  ],
+  g:{divide:"分歧",puzzled:"使困惑",variation:"變異",detect:"偵測；察覺",aldehydes:"醛類（化學物質）",sensitive:"敏感的",enzymes:"酵素",fade:"減弱；消退",unpleasantly:"令人不快地",flavour:"風味",volunteers:"志願者",encouragingly:"令人鼓舞的是"},
+  q:[
+   {y:"main",t:"Which statement best summarises the passage?",o:["Coriander is the most popular herb in the world","Both genes and experience shape whether people dislike coriander","Soap is made from coriander leaves","People who dislike coriander have a poor sense of smell"],a:1,e:"第二段講基因、第三段講文化經驗、第四段講可以改變，「基因與經驗都有影響」最完整。"},
+   {y:"detail",t:"What do coriander leaves and soap have in common?",o:["Both contain enzymes","Both contain aldehydes","Both are made from the same plant","Both have no smell"],a:1,e:"第二段第三句：aldehydes … are also produced in the making of soap。"},
+   {y:"detail",t:"“Genes are not the whole story” means that genes",o:["play no role at all","explain only part of the difference","are poorly understood by cooks","change as we grow older"],a:1,e:"下一句直接解釋：the variation explains only a small part。"},
+   {y:"infer",t:"Compared with someone who rarely eats coriander, a person who grew up eating it every day is",o:["more likely to dislike it","less likely to dislike it","certain to carry the variation","unable to taste aldehydes"],a:1,e:"第三段：常吃的地區，討厭的比例低很多。"},
+   {y:"vocab",t:"The word “fade” in paragraph 4 is closest in meaning to",o:["grow stronger","become weaker","spread","appear"],a:1,e:"fade＝漸漸減弱。後文說可以靠壓碎葉子、多吃幾次來改善，也是線索。"}
+  ]},
+{ id:"p3", lv:1, title:"The Surprising Power of a Short Nap", zh:"短暫午睡的力量", topic:"睡眠・工作",
+  paras:[
+   {s:["In many workplaces, sleeping during the day is seen as a sign of laziness.","Yet a growing body of research suggests that a short afternoon nap may make us sharper, calmer and more productive.","Some companies have even installed quiet “nap pods” for their staff."],k:1,a:[],w:"Yet 是轉折。第一句是一般看法，第二句提出作者要講的新觀點。"},
+   {s:["The key word is short.","Sleep researchers generally recommend naps of around 10 to 20 minutes.","A nap of this length keeps the brain in light sleep, so people wake up feeling refreshed rather than groggy.","Sleep for much longer, and you risk entering deep sleep, which can leave you confused and heavy-headed for some time afterwards — a state known as sleep inertia."],k:0,a:[1],w:"很短的主題句也是主題句！「關鍵是短」，後面全部在解釋為什麼要短。"},
+   {s:["The benefits appear to be real.","Studies have found that brief naps can improve alertness, mood and the ability to learn new information.","Pilots on long flights who were allowed a planned rest in the cockpit, for instance, stayed more alert than those who were not."],k:1,a:[0],w:"第二句說出具體好處，是本段最有資訊量的句子；for instance 那句是例子。"},
+   {s:["Napping is not for everyone, though.","People who struggle to sleep at night are often advised to avoid daytime sleep, because it can reduce their need for rest at bedtime.","For most healthy adults, however, a brief early-afternoon nap seems to be a simple, free way to recharge."],k:2,a:[0],w:"本段先讓步（不是每個人都適合），最後 however 拉回作者的結論。結論段的最後一句常是全文重點。"}
+  ],
+  g:{laziness:"懶惰",productive:"有生產力的",installed:"安裝",groggy:"昏昏沉沉的",inertia:"惰性",alertness:"警覺性",cockpit:"駕駛艙",recharge:"恢復精力",refreshed:"精神恢復的",struggle:"努力掙扎；難以做到",afterwards:"之後",brief:"短暫的"},
+  q:[
+   {y:"main",t:"The passage mainly argues that",o:["companies should build nap pods","short naps can benefit most people if they are kept brief","pilots need more sleep than other workers","napping is a sign of laziness"],a:1,e:"全文核心：短的午睡有益（第1、3、4段），但要短（第2段）。"},
+   {y:"detail",t:"Why are naps of 10 to 20 minutes recommended?",o:["They allow the brain to enter deep sleep","They keep the brain in light sleep","They increase the need for sleep at night","They are required by many companies"],a:1,e:"第二段第三句：keeps the brain in light sleep。"},
+   {y:"vocab",t:"The word “groggy” in paragraph 2 is closest in meaning to",o:["energetic","sleepy and confused","hungry","cheerful"],a:1,e:"與 refreshed 對比（rather than），且下一句提到 confused and heavy-headed。"},
+   {y:"infer",t:"Based on the passage, what advice would suit someone with trouble sleeping at night?",o:["Take longer naps","Avoid daytime naps","Nap only in the morning","Use a nap pod at work"],a:1,e:"第四段：失眠者通常被建議避免白天睡覺。"},
+   {y:"purpose",t:"What is the function of the example about pilots?",o:["To support the claim that naps improve alertness","To show that flying is tiring","To criticise airlines","To explain sleep inertia"],a:0,e:"for instance 引出的例子，用來支持前一句「午睡能提升警覺」。"}
+  ]},
+{ id:"p4", lv:1, title:"Why Do We Yawn?", zh:"我們為什麼打哈欠", topic:"生理・行為",
+  paras:[
+   {s:["Everyone yawns, from newborn babies to the elderly, and so do most animals with a backbone.","Yet despite how common it is, scientists still disagree about why we do it."],k:1,a:[],w:"Yet despite… 轉折後點出全文主題：原因仍有爭議。"},
+   {s:["One popular explanation is that yawning brings more oxygen into the blood when we are tired.","Experiments, however, have not supported this idea: people who breathed air with extra oxygen yawned just as often as those who did not.","As a result, many researchers have abandoned the oxygen theory."],k:2,a:[1],w:"「提出理論→實驗推翻→結論」的結構。As a result 帶出的結論句最能代表這段。"},
+   {s:["A newer theory suggests that yawning helps to cool the brain.","When we yawn, we take in a large breath of air and stretch the jaw, which increases blood flow to the head.","Supporters of this theory point out that people tend to yawn more when the brain is warm, and less on very hot days, when the outside air cannot cool anything."],k:0,a:[],w:"段首提出新理論，後兩句是機制與證據。"},
+   {s:["Perhaps the strangest feature of yawning is that it is contagious.","Simply seeing, hearing or even reading about a yawn can trigger one.","Some scientists believe this may be linked to empathy, since people tend to catch yawns more easily from friends and family than from strangers.","Have you yawned while reading this?"],k:0,a:[],w:"段首就是主題（哈欠會傳染）。最後那句問句是作者跟讀者開玩笑，不是重點。"}
+  ],
+  g:{backbone:"脊椎",despite:"儘管",explanation:"解釋",abandoned:"放棄",jaw:"下顎",supporters:"支持者",contagious:"具傳染性的",trigger:"引發",empathy:"同理心",oxygen:"氧氣",elderly:"老年人",stretch:"伸展"},
+  q:[
+   {y:"main",t:"What is the main idea of the passage?",o:["Yawning proves that we are tired","The purpose of yawning is still debated, and there are several theories","Animals yawn more often than humans","Yawning cools the body on hot days"],a:1,e:"第一段點出「仍有爭議」，後面依序介紹幾個理論。"},
+   {y:"detail",t:"Why have many researchers abandoned the oxygen theory?",o:["Breathing extra oxygen did not reduce yawning","Babies do not need oxygen","Yawning lowers oxygen levels","The theory was never tested"],a:0,e:"第二段：吸額外氧氣的人打哈欠一樣多。"},
+   {y:"detail",t:"According to the brain-cooling theory, people yawn less",o:["in the morning","on very hot days","after exercise","when they are tired"],a:1,e:"第三段最後一句：less on very hot days。"},
+   {y:"vocab",t:"The word “contagious” in paragraph 4 means",o:["spreading from one person to another","very dangerous","difficult to explain","happening only at night"],a:0,e:"下一句說看到、聽到甚至讀到哈欠都會引發，就是會「傳染」。"},
+   {y:"purpose",t:"The final question, “Have you yawned while reading this?”, is mainly meant to",o:["test the reader’s knowledge","playfully show that reading about yawns can trigger one","prove the oxygen theory","introduce a new topic"],a:1,e:"呼應同段「讀到哈欠也會引發」，是作者俏皮的互動。"}
+  ]},
+{ id:"p5", lv:2, title:"The Quiet Pandemic of Antibiotic Resistance", zh:"抗生素抗藥性：安靜的大流行", topic:"醫學・公衛",
+  paras:[
+   {s:["When penicillin entered widespread use in the 1940s, it transformed medicine.","Infections that had once been death sentences could suddenly be cured in days, and surgery became far safer.","Yet even as he accepted the Nobel Prize in 1945, Alexander Fleming warned that misuse of the drug could teach bacteria to resist it."],k:2,a:[0],w:"前兩句是背景，Yet 轉折帶出全文真正要談的「警告」。開頭段若有轉折，轉折後通常才是主題。"},
+   {s:["His warning has proved remarkably accurate.","Bacteria reproduce rapidly, and random mutations occasionally allow a few of them to survive a drug.","Each time antibiotics are used, the vulnerable bacteria die while the resistant ones multiply, gradually producing populations that no longer respond to treatment.","Overprescription in human medicine and the routine use of antibiotics in farm animals have greatly accelerated this process."],k:2,a:[0],w:"第一句承上啟下；本段在解釋抗藥性「怎麼產生」，第三句是機制核心。"},
+   {s:["The consequences are already serious.","A major study published in The Lancet estimated that in 2019 more than a million deaths worldwide were directly caused by drug-resistant infections.","Common procedures such as caesarean sections, chemotherapy and hip replacements all depend on effective antibiotics to prevent infection; without them, routine operations could become dangerous once again."],k:0,a:[],w:"短主題句＋兩個支持（死亡數字、手術風險）。"},
+   {s:["Solving the problem will require action on several fronts.","Doctors are being urged to prescribe antibiotics only when they are truly needed, and patients to follow their doctors’ advice rather than demanding antibiotics for viral illnesses such as colds.","At the same time, governments are exploring new financial incentives to encourage drug companies to develop new antibiotics, a field many have abandoned because it offers little profit.","Without such efforts, experts warn, we risk returning to a world in which a simple cut could kill."],k:0,a:[3],w:"「需要多方面行動」是主題，後面列醫師、病人、政府。最後一句是警語收尾。"}
+  ],
+  g:{transformed:"徹底改變",misuse:"濫用",mutations:"突變",vulnerable:"脆弱的；易受影響的",resistant:"具抗藥性的",multiply:"增殖",overprescription:"過度開藥",accelerated:"加速",caesarean:"剖腹產的",chemotherapy:"化療",incentives:"誘因",prescribe:"開處方",fronts:"方面；戰線",remarkably:"非常；顯著地",viral:"病毒性的",widespread:"廣泛的"},
+  q:[
+   {y:"main",t:"Which of the following best expresses the main idea?",o:["Fleming invented the first antibiotic","Antibiotic resistance, driven by misuse, is a serious threat that requires action on several fronts","Farm animals are the only cause of resistance","New antibiotics are being developed very quickly"],a:1,e:"四段：警告→成因→後果→對策，正解完整涵蓋。看到 only 這種絕對字眼要小心。"},
+   {y:"detail",t:"According to paragraph 2, how do resistant bacterial populations develop?",o:["Antibiotics turn harmless bacteria into dangerous ones","Vulnerable bacteria die while resistant ones survive and multiply","Bacteria learn from doctors’ mistakes","Resistant bacteria are introduced by surgery"],a:1,e:"第二段第三句的機制：天擇效應。"},
+   {y:"vocab",t:"The word “accelerated” in paragraph 2 is closest in meaning to",o:["slowed down","sped up","prevented","measured"],a:1,e:"accelerate＝加速。過度用藥讓抗藥性「更快」出現。"},
+   {y:"purpose",t:"The author mentions caesarean sections and hip replacements in order to",o:["show how much modern medicine depends on antibiotics","compare the costs of different operations","argue that surgery is overused","describe recent medical breakthroughs"],a:0,e:"這些手術都 depend on effective antibiotics，用來說明後果有多嚴重。"},
+   {y:"attitude",t:"The author’s attitude towards the future can best be described as",o:["indifferent","concerned but believing that action can help","completely hopeless","overly optimistic"],a:1,e:"有警告（concerned），但第四段提出對策，並非絕望。"}
+  ]},
+{ id:"p6", lv:2, title:"The Second Brain in Your Gut", zh:"腸道裡的第二個大腦", topic:"神經・消化",
+  paras:[
+   {s:["We often speak of “gut feelings” or “butterflies in the stomach”, as if the digestive system had emotions of its own.","Science is beginning to suggest that these expressions are more accurate than we thought.","The gut contains an extensive network of some 500 million nerve cells, leading some researchers to describe it as a “second brain”."],k:1,a:[2],w:"第一句用日常說法起頭，第二句才是主張：這些說法可能有科學根據。"},
+   {s:["The gut and the brain are in constant conversation.","Signals travel in both directions along the vagus nerve, a long nerve that connects the brain to many organs.","Moreover, the gut produces a large share of the body’s serotonin, a chemical messenger involved in mood, although it remains unclear how much of this affects the brain directly."],k:0,a:[],w:"主題句用比喻（對話）概括，後面兩個支持：迷走神經、血清素。"},
+   {s:["Much of the recent excitement concerns the trillions of microbes that live in our intestines, known collectively as the gut microbiome.","In experiments, mice raised without any gut bacteria reacted to stress differently from normal mice.","Some small human studies have also found differences in the gut bacteria of people with depression.","Still, scientists caution that a link is not the same as a cause: depression might change the microbiome, rather than the other way round."],k:0,a:[3],w:"段首引出主題（腸道菌）；最後 Still 帶出重要提醒——相關不等於因果，考推論題很愛考這種句子。"},
+   {s:["For now, the practical advice is fairly familiar.","A varied diet rich in fibre, vegetables and fermented foods appears to support a diverse microbiome, which is generally associated with better health.","Whether such foods can also lift our mood is a question researchers are only beginning to answer."],k:1,a:[0],w:"第一句只說「建議很熟悉」，第二句才講建議的內容。"}
+  ],
+  g:{digestive:"消化的",extensive:"廣泛的",vagus:"迷走（神經）",serotonin:"血清素",messenger:"信使",microbes:"微生物",intestines:"腸道",collectively:"統稱地",microbiome:"微生物群",caution:"告誡；提醒",fermented:"發酵的",diverse:"多樣的",fibre:"纖維",organs:"器官",trillions:"數兆"},
+  q:[
+   {y:"main",t:"The passage mainly discusses",o:["how to treat depression with diet","growing evidence of communication between the gut and the brain, and its limits","why some mice have no bacteria","the structure of the vagus nerve"],a:1,e:"全文講腸腦連結的證據，同時強調證據的限制（第3、4段）。"},
+   {y:"detail",t:"What is the vagus nerve, according to the passage?",o:["A nerve found only in the gut","A long nerve that connects the brain to many organs","A chemical messenger involved in mood","A type of gut bacteria"],a:1,e:"第二段第二句有同位語直接定義。"},
+   {y:"infer",t:"By saying “a link is not the same as a cause”, the scientists imply that",o:["gut bacteria definitely cause depression","depression might itself alter gut bacteria","the human studies were dishonest","mice and humans are identical"],a:1,e:"冒號後解釋：可能是憂鬱改變了菌群，而不是反過來。"},
+   {y:"vocab",t:"The word “caution” in paragraph 3 is closest in meaning to",o:["warn","celebrate","prove","deny"],a:0,e:"caution 當動詞＝提醒、告誡。"},
+   {y:"attitude",t:"What is the author’s attitude towards “second brain” research?",o:["Dismissive","Cautiously interested","Completely convinced","Angry"],a:1,e:"有興趣地介紹，但多次提醒 unclear、only beginning，屬於謹慎。"}
+  ]},
+{ id:"p7", lv:2, title:"When an Ancient Remedy Met the Laboratory", zh:"古方遇上實驗室：青蒿素", topic:"中醫・藥物",
+  paras:[
+   {s:["In 1967, at the height of the Vietnam War, China launched a secret research project to find a new treatment for malaria, which was killing soldiers in the region.","The disease’s parasite had become resistant to chloroquine, the standard drug of the time.","Two years later, a young researcher named Tu Youyou was put in charge of one of the project’s teams."],k:0,a:[],w:"首句交代全文背景：為了找新的瘧疾藥。後面是原因與人物登場。"},
+   {s:["Rather than starting from scratch, Tu’s team turned to the past.","They searched through more than two thousand traditional remedies and tested hundreds of plant extracts.","One herb, sweet wormwood, known in Chinese as qinghao, showed promise, but its effects in the laboratory were frustratingly inconsistent."],k:0,a:[],w:"主題句：轉向古代找答案。後面是做法與遇到的困難。"},
+   {s:["The breakthrough came from a text written more than 1,600 years earlier.","In a handbook of emergency prescriptions, the physician Ge Hong had advised soaking qinghao in cold water and drinking the juice.","Tu realised that the traditional method avoided heat, and she suspected that boiling might be destroying the active ingredient.","By switching to a low-temperature extraction process, her team obtained an extract that was highly effective against the parasite."],k:0,a:[3],w:"首句先說「突破來自古籍」，後面依時間順序展開。最後一句是結果，也算對一半。"},
+   {s:["The compound later isolated from the plant, artemisinin, has since saved millions of lives, and in 2015 Tu became the first Chinese woman to win a Nobel Prize in a science category.","Her story is often cited in debates about traditional medicine.","Yet it is important to be clear about what it actually shows: ancient knowledge provided a valuable clue, but it was modern chemistry and rigorous testing that turned that clue into a reliable drug."],k:2,a:[],w:"Yet 之後是作者自己的觀點，也是全文的結論：古籍給線索，現代科學把它變成藥。"}
+  ],
+  g:{malaria:"瘧疾",parasite:"寄生蟲",chloroquine:"氯喹（抗瘧藥）",remedies:"療方",extracts:"萃取物",wormwood:"蒿（青蒿）",inconsistent:"不一致的",frustratingly:"令人沮喪地",breakthrough:"突破",prescriptions:"處方",physician:"醫師",extraction:"萃取",isolated:"分離出",compound:"化合物",cited:"引用",rigorous:"嚴謹的",scratch:"從零開始（from scratch）",soaking:"浸泡"},
+  q:[
+   {y:"main",t:"What is the passage mainly about?",o:["Traditional medicine is always better than modern medicine","How an ancient text and modern science together led to artemisinin","The history of the Vietnam War","How to grow sweet wormwood"],a:1,e:"從找藥、翻古籍、低溫萃取到作者總結，正解最完整；「傳統醫學總是比較好」與作者結論相反。"},
+   {y:"detail",t:"Why was a new malaria drug needed?",o:["Chloroquine was too expensive","The parasite had become resistant to chloroquine","Soldiers refused to take chloroquine","Chloroquine had not been invented yet"],a:1,e:"第一段第二句。"},
+   {y:"detail",t:"What did Tu suspect after reading Ge Hong’s advice?",o:["Cold water was poisonous","Boiling might destroy the active ingredient","Qinghao only grew in winter","The juice should be mixed with chloroquine"],a:1,e:"第三段第三句：boiling might be destroying the active ingredient。"},
+   {y:"vocab",t:"The word “rigorous” in paragraph 4 is closest in meaning to",o:["careful and strict","quick and cheap","ancient","dangerous"],a:0,e:"rigorous testing＝嚴謹的測試。"},
+   {y:"infer",t:"The author’s final point suggests that",o:["ancient texts alone are enough to produce new drugs","traditional knowledge and scientific testing can complement each other","Tu Youyou did not deserve the Nobel Prize","modern chemistry has no use for old texts"],a:1,e:"古籍提供線索＋現代化學驗證＝互補。"}
+  ]},
+{ id:"p8", lv:2, title:"Can Loneliness Make You Ill?", zh:"孤獨會讓人生病嗎", topic:"心理・公衛",
+  paras:[
+   {s:["Loneliness is usually thought of as an emotional problem.","Increasingly, however, researchers are treating it as a public-health issue.","In 2023, the US Surgeon General described loneliness as an epidemic, and the World Health Organization launched a commission on social connection."],k:1,a:[],w:"however 轉折句就是主題：孤獨被當作公衛問題。第三句是證據。"},
+   {s:["The evidence linking loneliness to poor health is substantial.","Large reviews have found that people who are socially isolated have a significantly higher risk of early death, as well as heart disease, stroke and dementia.","Some researchers have compared the impact of chronic loneliness to that of smoking up to 15 cigarettes a day — a striking comparison, though one that some scientists consider an oversimplification."],k:0,a:[],w:"主題句「證據很多」，後面列證據。"},
+   {s:["How might a feeling affect the body?","One explanation is that loneliness keeps the body in a state of mild, persistent stress.","Over time, raised levels of stress hormones can promote inflammation and weaken the immune system.","Lonely people may also sleep worse, exercise less and be less likely to seek medical help."],k:1,a:[0],w:"段首是問句（引題），第二句是回答，答案句才是重點。"},
+   {s:["It is important to distinguish loneliness from being alone.","Many people enjoy solitude and spend long periods by themselves without suffering any harm.","Loneliness, by contrast, is the painful gap between the social connection we want and the connection we have.","This is why simply surrounding someone with people does not necessarily cure it; what matters is the quality, not the quantity, of our relationships."],k:0,a:[3],w:"段首提出要區分兩個概念；by contrast 後給定義；最後一句是延伸結論。"}
+  ],
+  g:{epidemic:"流行病",commission:"委員會",substantial:"大量的；充分的",isolated:"孤立的",dementia:"失智症",chronic:"慢性的",striking:"驚人的",oversimplification:"過度簡化",persistent:"持續的",inflammation:"發炎",distinguish:"區分",solitude:"獨處",immune:"免疫的",increasingly:"越來越"},
+  q:[
+   {y:"main",t:"Which statement best summarises the passage?",o:["Loneliness is a serious health issue, distinct from simply being alone","Smoking is less harmful than loneliness","People should never spend time alone","The WHO has found a cure for loneliness"],a:0,e:"全文：孤獨是公衛問題→影響健康→機制→與獨處不同。"},
+   {y:"detail",t:"According to paragraph 3, how might loneliness harm the body?",o:["By keeping the body in persistent stress that promotes inflammation","By reducing the need for sleep","By increasing exercise","By directly damaging the heart muscle"],a:0,e:"第三段第二、三句。"},
+   {y:"vocab",t:"The word “solitude” in paragraph 4 means",o:["the state of being alone","a feeling of sadness","a large group of friends","a type of illness"],a:0,e:"spend long periods by themselves 就在解釋 solitude。"},
+   {y:"attitude",t:"How does the author present the comparison with smoking 15 cigarettes a day?",o:["As exactly accurate","As attention-grabbing but debated","As completely false","As the WHO’s official position"],a:1,e:"striking（引人注目）但 some scientists consider an oversimplification。"},
+   {y:"infer",t:"Which statement would the author most likely agree with?",o:["A person with many acquaintances can still feel lonely","Living alone always causes illness","Loneliness only affects older people","More people around you always cures loneliness"],a:0,e:"第四段：重要的是關係的品質而非數量。"}
+  ]},
+{ id:"p9", lv:3, title:"The Placebo That Works Even When You Know It Is Fake", zh:"明知是假藥也有效的安慰劑", topic:"醫學・心理",
+  paras:[
+   {s:["For decades, the placebo effect has been regarded as a nuisance in medical research.","When a patient improves after taking a sugar pill, the improvement is usually dismissed as a product of expectation — something to be subtracted from the “real” effect of a drug.","Clinical trials are designed precisely to separate the two."],k:0,a:[],w:"主題句：安慰劑效應一直被視為麻煩。後兩句解釋為什麼。"},
+   {s:["A series of unusual experiments has begun to complicate this picture.","In 2010, researchers at Harvard gave patients with irritable bowel syndrome pills that they were openly told contained no active ingredients.","The patients were informed, however, that placebos had produced improvements in previous studies through mind–body processes.","Remarkably, those taking the “honest” placebo reported significantly greater relief than a group that received no treatment at all."],k:0,a:[3],w:"首句是轉折主題（舊觀點被挑戰），後面是證據。Remarkably 那句是研究結果，算對一半。"},
+   {s:["Why should a pill that the patient knows to be inert do anything at all?","One proposal is that the ritual of treatment — the consultation, the prescription, the act of swallowing a tablet — can trigger learned responses in the brain, much as the sound of a bell once made Pavlov’s dogs salivate.","Brain-imaging studies have shown that placebos can alter activity in regions involved in pain processing and release the body’s own pain-relieving chemicals.","In this view, the placebo is not “nothing”; it is a way of activating the body’s existing capacity for self-regulation."],k:3,a:[1],w:"問句引題，最後 In this view 把解釋收束成一句結論，是本段重點。"},
+   {s:["Enthusiasm should nonetheless be tempered.","Open-label placebos appear to help mainly with conditions defined by subjective symptoms, such as pain, fatigue and nausea; there is little evidence that they shrink tumours or cure infections.","Many of the trials have also been small.","The lesson, perhaps, is not that belief can replace medicine, but that the context in which care is delivered may matter more than doctors have traditionally assumed."],k:3,a:[0],w:"段首是讓步（別太興奮），最後一句是作者對全文的結論。"}
+  ],
+  g:{nuisance:"麻煩事",dismissed:"不予理會；駁回",subtracted:"減去",complicate:"使複雜化",irritable:"易激的（大腸激躁症）",inert:"無活性的",ritual:"儀式",consultation:"診察；諮詢",salivate:"流口水",tempered:"緩和；節制",subjective:"主觀的",fatigue:"疲勞",nausea:"噁心",tumours:"腫瘤",enthusiasm:"熱情",nonetheless:"儘管如此",capacity:"能力",regarded:"被視為"},
+  q:[
+   {y:"main",t:"What is the main point of the passage?",o:["Placebos should replace most medicines","Placebos can help even when patients know they are fake, though mainly for subjective symptoms","Clinical trials no longer need placebo groups","Pavlov discovered the placebo effect"],a:1,e:"第2–3段講有效與機制，第4段限定範圍，正解兼顧兩面。"},
+   {y:"detail",t:"What were the patients in the 2010 study told?",o:["That the pills were a new drug","That the pills contained no active ingredients but had helped in earlier studies","Nothing about the pills","That the pills would cure them completely"],a:1,e:"第二段第二、三句。"},
+   {y:"purpose",t:"Why does the author mention Pavlov’s dogs?",o:["To illustrate how learned responses can be triggered","To show that animals respond better to placebos","To criticise animal experiments","To explain irritable bowel syndrome"],a:0,e:"much as… 是類比：治療儀式像鈴聲一樣觸發「學習到的反應」。"},
+   {y:"vocab",t:"The word “tempered” in paragraph 4 is closest in meaning to",o:["moderated","increased","celebrated","hidden"],a:0,e:"Enthusiasm should be tempered＝熱情要節制，後面接著講限制。"},
+   {y:"infer",t:"The author would most likely agree that",o:["placebos could replace chemotherapy","doctors should pay more attention to how care is delivered","trials should stop using placebos","placebos only work when patients are deceived"],a:1,e:"最後一句：the context in which care is delivered may matter more。「只有被騙才有效」正好被本文的研究推翻。"}
+  ]},
+{ id:"p10", lv:3, title:"Why We Forget and How to Remember", zh:"遺忘與記憶的科學", topic:"學習・心理",
+  paras:[
+   {s:["In the 1880s, the German psychologist Hermann Ebbinghaus conducted a series of experiments on the most convenient subject available: himself.","He memorised lists of meaningless syllables and then tested how much he could recall after varying intervals.","The results, plotted as what is now called the forgetting curve, were sobering: much of the material vanished within the first day, after which the rate of loss slowed considerably."],k:2,a:[],w:"前兩句是實驗過程，第三句是發現（遺忘曲線），資訊量最大。"},
+   {s:["Ebbinghaus also made a more encouraging discovery.","Each time he reviewed a list, the curve became flatter, meaning that the information survived longer before fading.","Crucially, reviews spread out over several days were far more effective than the same amount of study crammed into a single session.","This phenomenon, known as the spacing effect, is one of the most reliable findings in the psychology of learning."],k:2,a:[3,0],w:"Crucially（關鍵是）是強烈的重點訊號。下一句替它命名，也可接受。"},
+   {s:["A second powerful technique is retrieval practice.","Rereading a textbook feels productive because the material becomes familiar, but familiarity is easily mistaken for mastery.","Actively attempting to recall information — by testing oneself, for instance — strengthens memory far more, even when the attempt fails.","Students, however, consistently underestimate this benefit and prefer rereading, perhaps because effortful recall feels less comfortable."],k:2,a:[0],w:"首句只給名稱，第三句才說明它是什麼、為什麼有效。"},
+   {s:["The implications for learners are straightforward, if somewhat counterintuitive.","Studying should feel slightly difficult; ease is often a sign that little is being learned.","Short, regular sessions of self-testing, spaced over days and weeks, will typically outperform marathon review sessions the night before an exam.","Forgetting, in this sense, is not the enemy of learning but part of the process: the effort of retrieving a half-forgotten memory is precisely what makes it stick."],k:3,a:[0,2],w:"結論段的最後一句把全文收束：遺忘是學習的一部分。這也是這個遊戲要妳每天回來複習單字罐的原因。"}
+  ],
+  g:{syllables:"音節",intervals:"間隔",sobering:"令人警醒的",vanished:"消失",considerably:"相當地",crucially:"關鍵地",crammed:"塞進；臨時抱佛腳",phenomenon:"現象",retrieval:"提取（記憶）",familiarity:"熟悉感",mastery:"精通",underestimate:"低估",effortful:"費力的",implications:"意涵",counterintuitive:"違反直覺的",outperform:"勝過",convenient:"方便的",consistently:"一貫地"},
+  q:[
+   {y:"main",t:"What is the main idea of the passage?",o:["Ebbinghaus had a poor memory","Forgetting is natural, and spaced self-testing makes learning last","Rereading is the most effective way to study","Exams should be held more often"],a:1,e:"遺忘曲線→間隔效應→提取練習→結論，正解最完整。"},
+   {y:"detail",t:"What did the forgetting curve show?",o:["Memory loss is steady over many weeks","Much is lost in the first day, after which loss slows","Nothing is forgotten after reviewing once","Meaningless syllables are easier to remember"],a:1,e:"第一段最後一句。"},
+   {y:"vocab",t:"The word “sobering” in paragraph 1 is closest in meaning to",o:["making one serious and concerned","exciting and fun","easy to understand","related to alcohol"],a:0,e:"sobering＝令人清醒、警醒的。結果是「很快就忘」，所以讓人擔心。"},
+   {y:"infer",t:"Why do students prefer rereading, according to the passage?",o:["It is proven to work better","Familiar material feels like mastery, and recall feels uncomfortable","Teachers require it","It takes less time than any other method"],a:1,e:"第三段第二句與最後一句合起來。"},
+   {y:"apply",t:"Which study plan would the author most likely recommend?",o:["Rereading notes for six hours the night before the exam","Twenty minutes of self-quizzing every day for two weeks","Highlighting the textbook once","Avoiding anything that feels difficult"],a:1,e:"第四段：短、規律、間隔的自我測驗。"}
+  ]},
+{ id:"p11", lv:3, title:"Microplastics Are Inside Us. Are They Harming Us?", zh:"體內的微塑膠有害嗎", topic:"環境・健康",
+  paras:[
+   {s:["Plastic was once celebrated as a miracle material: cheap, light and almost indestructible.","Its durability, however, has turned out to be a mixed blessing.","As plastic waste breaks down, it does not disappear but fragments into ever smaller particles, and these microplastics — pieces smaller than five millimetres — have now been found almost everywhere scientists have looked, from Arctic snow to the deepest ocean trenches."],k:2,a:[1],w:"however 轉折出問題，第三句把問題具體化並引出全文主角：微塑膠無所不在。"},
+   {s:["Increasingly, that includes the human body.","Researchers have detected microplastics in human blood, lungs and placentas, and a 2024 study reported finding them in fatty deposits in the arteries of some patients undergoing surgery.","Notably, those patients with detectable plastic were at higher risk of heart attack, stroke or death over the following three years than those without."],k:0,a:[1],w:"短主題句：人體也包括在內。後面是具體發現。"},
+   {s:["Such findings have attracted considerable media attention, but they must be interpreted with care.","The arterial study showed an association, not proof that plastics caused the harm; people exposed to more plastic may differ in other ways, such as diet or income.","Measuring tiny particles is also technically difficult, and contamination from laboratory equipment — much of which is itself made of plastic — can distort results."],k:0,a:[],w:"but 後面是本段立場：要謹慎解讀。後兩句是兩個理由。"},
+   {s:["What, then, should we conclude?","The honest answer is that the science is still young.","Laboratory studies suggest that microplastics can trigger inflammation in cells, and some carry chemicals known to interfere with hormones, so the concern is reasonable.","But until researchers can reliably measure exposure and track its effects in large populations, claims that microplastics are definitively making us ill go beyond the evidence."],k:3,a:[1],w:"作者先承認擔憂合理，最後 But 給出最終立場：目前說它「確定致病」超出證據。"}
+  ],
+  g:{indestructible:"不可摧毀的",durability:"耐久性",blessing:"恩惠（a mixed blessing＝有利也有弊）",fragments:"碎裂",trenches:"海溝",placentas:"胎盤",arteries:"動脈",deposits:"沉積物",association:"關聯",contamination:"汙染",distort:"扭曲",definitively:"確定地",interfere:"干擾",exposure:"暴露（量）",notably:"值得注意的是",interpreted:"解讀",celebrated:"讚揚",undergoing:"接受；經歷"},
+  q:[
+   {y:"main",t:"Which best expresses the main idea?",o:["Microplastics have been proven to cause heart attacks","Microplastics are found widely, even in humans, but their health effects are not yet proven","Plastic is a miracle material with no drawbacks","Laboratory equipment should not be made of plastic"],a:1,e:"第1–2段：無所不在；第3–4段：證據還不足。"},
+   {y:"detail",t:"What did the 2024 study find?",o:["Plastic in arteries was associated with a higher risk of heart attack, stroke or death","Plastic caused cancer in all patients","Patients with plastic recovered faster","Microplastics could not be found in arteries"],a:0,e:"第二段最後一句；注意第三段說這只是 association。"},
+   {y:"detail",t:"Why might laboratory equipment distort results?",o:["It is too expensive","It is itself often made of plastic","It cannot detect large particles","It heats the samples"],a:1,e:"第三段破折號內：much of which is itself made of plastic。"},
+   {y:"vocab",t:"In paragraph 1, a “mixed blessing” is something that",o:["has both advantages and disadvantages","is completely harmful","is mixed with other materials","is given as a gift"],a:0,e:"耐用是好處，但也讓塑膠無法消失，所以好壞參半。"},
+   {y:"attitude",t:"The author’s attitude towards claims about microplastics is best described as",o:["alarmed and certain","balanced and cautious","dismissive","enthusiastic"],a:1,e:"承認 concern is reasonable，但也指出 go beyond the evidence。"}
+  ]},
+{ id:"p12", lv:3, title:"Should Ageing Be Treated as a Disease?", zh:"老化該被當成疾病嗎", topic:"醫學・倫理",
+  paras:[
+   {s:["Medicine has traditionally treated ageing as the backdrop against which diseases occur, rather than as a disease in itself.","Heart disease, cancer and dementia are targeted one by one, while the process that makes all of them more likely is accepted as natural and inevitable.","A growing number of scientists argue that this approach is fundamentally misguided."],k:2,a:[],w:"前兩句描述傳統做法，第三句提出全文要討論的挑戰性主張。"},
+   {s:["Their reasoning is straightforward.","Age is by far the greatest risk factor for most chronic illnesses; the risk of developing dementia, for example, roughly doubles every five years after the age of 65.","If the underlying biology of ageing could be slowed, they argue, it might delay many diseases at once — a far more efficient strategy than fighting each in isolation."],k:2,a:[1],w:"「Their reasoning is…」只是預告，真正的論點在最後一句：減緩老化可一次延後多種疾病。"},
+   {s:["Some early results lend support to this idea.","As we age, so-called senescent cells, which have stopped dividing but refuse to die, accumulate in tissues and release inflammatory signals.","In mice, drugs that selectively clear these cells have been shown to delay several age-related conditions and extend healthy lifespan.","Whether the same benefits can be achieved safely in humans, however, remains an open question, and early clinical trials have produced mixed results."],k:0,a:[2],w:"主題句在段首（有初步支持），中間是證據，最後 however 是保留。"},
+   {s:["Critics raise concerns that go beyond biology.","Labelling ageing a disease, they warn, could stigmatise older people and encourage companies to market unproven “anti-ageing” treatments to anxious consumers.","Others reply that the label matters less than the goal: not to make people live forever, but to extend the number of years they spend in good health.","The debate, in other words, is as much about values as it is about science."],k:3,a:[0],w:"in other words 收束正反兩方，點出這是價值觀的辯論。"}
+  ],
+  g:{backdrop:"背景",inevitable:"不可避免的",fundamentally:"根本地",misguided:"錯誤的；被誤導的",underlying:"根本的；潛在的",efficient:"有效率的",isolation:"單獨；孤立",senescent:"衰老的",accumulate:"累積",inflammatory:"發炎的",selectively:"選擇性地",lifespan:"壽命",stigmatise:"汙名化",unproven:"未經證實的",anxious:"焦慮的",tissues:"組織",straightforward:"簡單明瞭的"},
+  q:[
+   {y:"main",t:"What is the passage mainly about?",o:["A cure for ageing has been found","The argument that ageing itself should be targeted, and the scientific and ethical debate around it","Why dementia is more common than cancer","How to market anti-ageing products"],a:1,e:"主張→理由→證據→批評，正解包含正反兩面。"},
+   {y:"detail",t:"According to the passage, senescent cells",o:["divide faster than normal cells","have stopped dividing but do not die","are found only in mice","prevent inflammation"],a:1,e:"第三段第二句的關係子句。"},
+   {y:"purpose",t:"The statistic about dementia is used to support the idea that",o:["age is the main risk factor for chronic illness","dementia can be cured","people over 65 should be tested yearly","mice develop dementia"],a:0,e:"for example 引出，用來支持前半句 Age is by far the greatest risk factor。"},
+   {y:"vocab",t:"The word “stigmatise” in paragraph 4 is closest in meaning to",o:["mark as shameful","protect","treat medically","encourage"],a:0,e:"stigmatise＝汙名化；批評者擔心老人被貼上負面標籤。"},
+   {y:"infer",t:"The final sentence suggests that the debate",o:["will be settled by one more experiment","involves social and ethical questions, not only evidence","is only about money","has already ended"],a:1,e:"as much about values as it is about science。"}
+  ]}
+];
+
+const QTYPE = {main:"主旨",detail:"細節",vocab:"字義",infer:"推論",purpose:"目的",attitude:"態度",apply:"應用",ref:"指涉"};
+
+</script>
+<script>
+"use strict";
+/* ---------- storage ---------- */
+const ROLE=(()=>{try{if(location.hash==="#j")localStorage.setItem("lb_role","j");return localStorage.getItem("lb_role")||"her";}catch(e){return "her";}})();
+const ME=ROLE==="j"?"j":"her", PT=ME==="j"?"her":"j", NM={j:"傑",her:"彣"};
+const KEY = "desk-v1-"+ME;
+const LEVELS = {1:{n:"Lv1 入門",d:"短新聞・B2"},2:{n:"Lv2 進階",d:"一般報導・C1"},3:{n:"Lv3 挑戰",d:"長篇分析・考試難度"}};
+const BOX_DAYS = [0,1,3,7,14];
+const INKS = ["--s1","--s2","--s3","--s4","--s5"];
+function fresh(){return {v:1,done:{},stamps:[],jar:[],days:[],rec:2,hi:0,log:[],hints:true,wish:[],xp:0,likes:[],svt:0};}
+const RANKS=[[0,"實習記者"],[60,"助理編輯"],[200,"編輯"],[450,"資深編輯"],[800,"副主編"],[1300,"主編"]];
+function rankOf(xp){let i=0;RANKS.forEach((r,j)=>{if(xp>=r[0])i=j;});return {i,name:RANKS[i][1],next:RANKS[i+1]?RANKS[i+1][0]:null,base:RANKS[i][0]};}
+let S = fresh();
+try{const raw=localStorage.getItem(KEY); if(raw){S=Object.assign(fresh(),JSON.parse(raw));}}catch(e){}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){S.svt=Date.now();saveLocal();if(typeof scheduleSync==="function")scheduleSync();}
+const NEWS_LIST = (Array.isArray(window.NEWS)?window.NEWS:[]).filter(n=>n&&n.id&&Array.isArray(n.q)&&((n.url&&n.keys)||(n.desk&&Array.isArray(n.paras)&&n.heads&&n.err&&n.cut))).map(n=>{if(n.desk){n.g=n.g||{};n.title=n.heads.o[n.heads.a];}else n.news=true;return n;}).sort((a,b)=>b.date.localeCompare(a.date));
+
+/* spread correct answers of practice passages across A–D, stable per question */
+(function(){function rng(seed){let h=2166136261;for(const c of seed){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return((h>>>0)%10000)/10000;};}
+for(const p of PASSAGES)p.q.forEach((q,i)=>{const r=rng(p.id+"#"+i);const idx=[0,1,2,3];for(let k=3;k>0;k--){const j=Math.floor(r()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]];}q.o=idx.map(x=>q.o[x]);q.a=idx.indexOf(q.a);});})();
+
+/* ---------- helpers ---------- */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = ()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const addDays=(ds,n)=>{const d=new Date(ds+"T00:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const hash=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))|0;return Math.abs(h);};
+const wordsIn=p=>p.words||p.paras.reduce((n,pa)=>n+pa.s.join(" ").split(/\s+/).filter(Boolean).length,0);
+const MON=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const stampDate=ds=>{const [y,m,d]=ds.split("-");return `${d} ${MON[+m-1]} ${y}`;};
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"");}catch(e){return "";}};
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
+function starsHTML(n,cls="stars"){let h=`<span class="${cls}">`;for(let i=0;i<3;i++)h+=i<n?"★":`<span class="off">★</span>`;return h+"</span>";}
+function findP(id){return NEWS_LIST.find(p=>p.id===id)||PASSAGES.find(p=>p.id===id);}
+function streak(){const set=new Set(S.days);let d=today();if(!set.has(d))d=addDays(d,-1);let n=0;while(set.has(d)){n++;d=addDays(d,-1);}return n;}
+function dueWords(){const t=today();return S.jar.filter(w=>w.box<5&&w.due<=t);}
+
+/* ---------- AI (only lights up if this viewer can ask Claude) ---------- */
+let AI=null;
+(async()=>{try{if(window.claude&&claude.use){const s=await claude.use("sample");if(s){AI=s;render();}}}catch(e){}})();
+async function askJSON(prompt){
+  let v;
+  try{ if(typeof AI.json==="function"){v=await AI.json(prompt,{modelTier:"default"});} }catch(e){ if(e&&e.code&&e.code!=="parse_error")throw e; }
+  if(v===undefined){const r=await AI(prompt,{modelTier:"default"});const m=(r.text||"").match(/\{[\s\S]*\}/);if(!m)throw new Error("Claude 沒有回傳可讀的內容");v=JSON.parse(m[0]);}
+  return v;
+}
+
+/* ---------- view state ---------- */
+let V={view:"news"};
+function go(view,extra){V=Object.assign({view},extra||{});render();window.scrollTo({top:0});}
+function renderTabs(){
+  const due=dueWords().length;
+  const tabs=[["news","編輯台"],["paste","自己貼"],["jar","單字罐"+(due?`<span class="dot">${due}</span>`:"")],["passport","護照"]];
+  const cur={nprep:"news",nkeys:"news",desk:"news",read:"news",keys:"news",quiz:V.p&&V.p.paste?"paste":"news",result:V.p&&V.p.paste?"paste":"news",review:"jar",pread:"paste",pkeys:"paste",pgist:"paste",backup:"passport"}[V.view]||V.view;
+  $("#tabs").innerHTML=tabs.map(([k,l])=>`<button data-act="tab" data-v="${k}" class="${cur===k?"on":""}">${l}</button>`).join("");
+}
+function render(){
+  renderTabs();
+  const f={desk:vDesk,news:vNews,nprep:vPrep,nkeys:vNKeys,read:vRead,keys:vKeys,quiz:vQuiz,result:vResult,passport:vPassport,backup:vBackup,jar:vJar,review:vReview,paste:vPaste,pread:vRead,pkeys:vKeys,pgist:vGist}[V.view]||vNews;
+  $("#app").innerHTML=f();
+  document.body.classList.toggle("hints-off",!S.hints);
+}
+
+/* ---------- NEWS HOME ---------- */
+function recNews(){
+  const unread=NEWS_LIST.filter(n=>!S.done[n.id]);
+  return unread.find(n=>n.lv===S.rec)||unread[0]||null;
+}
+function newsCard(n,rec){
+  const d=S.done[n.id];
+  return `<button class="ncard ${rec?"rec":""} ${d?"done":""}" data-act="${n.desk?"openDesk":"openNews"}" data-id="${esc(n.id)}">
+    <span class="main"><span class="src">${n.desk?"稿件 · SLUG: "+esc(n.slug||""):"外電 · "+esc(n.src)} · ${esc(n.date.slice(5).replace("-","/"))}</span>
+    <span class="hl">${n.desk&&!d?esc(n.zh):esc(n.title)}</span><span class="zh">${n.desk?(d?esc(n.zh):"標題待妳來下"):esc(n.zh||"")}</span>
+    <span class="meta-row"><span class="chip">${esc(n.topic)}</span><span class="chip red">${LEVELS[n.lv].n}</span>${d?starsHTML(d.best):""}${partnerRead(n)?`<span class="chip pt">${NM[PT]}讀過</span>`:""}</span></span>
+    <span class="stub"><span>${esc((n.place||"").split(",").pop().trim().toUpperCase())}</span><b>${n.mins||Math.max(1,Math.round(wordsIn(n)/180))} min</b><span>${d?"已完成":n.desk?"待編輯":"待讀"}</span></span></button>`;
+}
+function vNews(){
+  const due=dueWords().length, rec=recNews();
+  let h=`<div class="stats">
+    <div class="stat"><b>${streak()}</b><span>連續天數</span></div>
+    <div class="stat"><b>${S.log.length}</b><span>讀過篇數</span></div>
+    <div class="stat"><b>${new Set(S.stamps.filter(s=>s.country).map(s=>s.country)).size}</b><span>去過的國家</span></div>
+    <div class="stat"><b>${S.jar.length}</b><span>單字罐</span></div></div>`;
+  const rk=rankOf(S.xp||0);
+  h+=`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><div><div class="small muted">妳在編輯台的職位</div><div style="font-weight:700;font-size:18px">${rk.name}</div></div><div class="small muted" style="font-family:var(--f-mono)">${S.xp||0} XP${rk.next?` / ${rk.next}`:""}</div></div>${rk.next?`<div class="bar"><i style="width:${Math.min(100,Math.round(((S.xp||0)-rk.base)/(rk.next-rk.base)*100))}%"></i></div><div class="small muted">再 ${rk.next-(S.xp||0)} XP 升上「${RANKS[rk.i+1][1]}」</div>`:`<div class="small muted">已經是主編了！</div>`}</div>`;
+  h+=boardHTML()+inboxHTML();
+  if(due) h+=`<div class="card row" style="margin-top:12px;justify-content:space-between"><div><h3>單字罐裡有 ${due} 個字該複習了</h3><div class="small muted">隔幾天再見一次，最容易記住。</div></div><button class="btn" data-act="startReview">去複習</button></div>`;
+  h+=`<p class="small muted" style="margin:14px 0 0">妳是英文報社的新人編輯。每天桌上有兩種工作：<b>稿件</b>是根據當天真實時事寫成的報導，要讀稿、下標題、抓出混進去的錯、砍掉一段、回覆讀者來信；<b>外電</b>是真的新聞原文，到原網站讀完，回來挑重點、答題。完成就升職、在護照蓋章。題型仿考試閱讀測驗。目前推薦難度：<b>${LEVELS[S.rec].n}</b></p>`;
+  if(rec){h+=`<div class="sec-head"><h2>今天先處理這篇</h2></div><div class="cards">${newsCard(rec,true)}</div>`;}
+  const rest=NEWS_LIST.filter(n=>!rec||n.id!==rec.id);
+  const byDate={};rest.forEach(n=>{(byDate[n.date]=byDate[n.date]||[]).push(n);});
+  for(const d of Object.keys(byDate).sort().reverse()){
+    h+=`<div class="sec-head"><h2>${d===today()?"今天":d.slice(5).replace("-","月")+"日"}的稿件與外電</h2><span class="small muted">${byDate[d].length} 則</span></div><div class="cards">${byDate[d].map(n=>newsCard(n,false)).join("")}</div>`;
+  }
+  if(!NEWS_LIST.length)h+=`<div class="card small muted" style="margin-top:12px">新聞還在路上。先讀下面的練習稿，或到「自己貼」貼一篇有興趣的文章。</div>`;
+  h+=`<details class="more"><summary>練習稿（12 篇原創短文，抓重點逐段練）</summary>`;
+  for(const lv of [1,2,3]){
+    h+=`<div class="small muted" style="margin-top:10px">${LEVELS[lv].n}</div><div class="slips">`+
+      PASSAGES.filter(p=>p.lv===lv).map(p=>{const d=S.done[p.id];return `<button class="slip" data-act="openPractice" data-id="${p.id}"><span class="en">${esc(p.title)}</span><span class="meta"><span>${esc(p.zh)} ・${wordsIn(p)} 字</span>${d?starsHTML(d.best):""}</span></button>`;}).join("")+`</div>`;
+  }
+  h+=`</details>`;
+  return h;
+}
+
+/* ---------- NEWS FLOW ---------- */
+function stepsHTML(labels,cur){return `<div class="steps">${labels.map((s,i)=>`<div class="${i===cur?"on":i<cur?"past":""}">${i+1}. ${s}</div>`).join("")}</div>`;}
+const NSTEPS=["生字","讀原文","挑重點","答題"];
+function inJar(w){const l=w.toLowerCase();return S.jar.some(j=>j.w===l);}
+function openNews(n){V={view:"nprep",p:n,news:true,picks:[],checked:false,qi:0,ans:[],newWords:0,opened:false};render();window.scrollTo({top:0});}
+function vPrep(){
+  const n=V.p;
+  let h=`${stepsHTML(NSTEPS,V.opened?1:0)}<div class="row"><span class="chip">${esc(n.src)}</span><span class="chip">${esc(n.topic)}</span><span class="chip red">${LEVELS[n.lv].n}</span><span class="small muted">約 ${n.words} 字・${n.mins} 分鐘</span></div>
+  <h2 class="art-title">${esc(n.title)}</h2><div class="muted small">${esc(n.zh||"")}　📍 ${esc(n.place||"")}</div>
+  <h2>先認識這些字</h2><p class="small muted">文章裡會出現這些比較難的字。不熟的點一下，就會放進單字罐。</p>
+  <div class="vgrid">${Object.entries(n.vocab||{}).map(([w,z])=>`<button class="vitem ${inJar(w)?"inj":""}" data-act="vocabAdd" data-w="${esc(w)}" data-zh="${esc(z)}"><b>${esc(w)}</b><span>${esc(z)}</span></button>`).join("")}</div>
+  <h2>到原網站讀全文</h2><p class="small muted">用平常讀新聞的速度讀一遍，先抓「發生什麼事、為什麼、影響多大」。讀完再回到這裡。</p>
+  <a class="btn wide" href="${esc(n.url)}" target="_blank" rel="noopener" data-act="openSrc">打開 ${esc(n.src)} 原文 ↗</a>
+  <button class="btn ${V.opened?"":"ghost"} wide" style="margin-top:10px" data-act="newsRead">讀完了，回來挑重點 →</button>
+  ${SY.on?`<button class="btn ghost wide" style="margin-top:10px" data-act="recOpen" data-nid="${esc(n.id)}">推薦這則給${NM[PT]}</button>`:""}
+  <p class="small muted">連結打不開的話，可以把網址複製到瀏覽器：<br><span style="overflow-wrap:anywhere">${esc(n.url)}</span></p>`;
+  return h;
+}
+function vNKeys(){
+  const n=V.p,K=n.keys,need=K.k.length;
+  let h=`${stepsHTML(NSTEPS,2)}<h2 style="margin-top:0">哪 ${need} 句是這篇新聞的「重點」？</h2>
+  <p class="small muted">下面六句都是改寫過的句子，有些是主要重點，有些只是支持的細節（例子、數字、引述）。選出 ${need} 句最重要的。</p>`;
+  K.s.forEach((s,i)=>{
+    const picked=V.picks.includes(i);let c="kp";let mark="";
+    if(V.checked){ if(K.k.includes(i)&&picked){c+=" ok";mark="✓";} else if(K.k.includes(i)){c+=" miss";} else if(picked){c+=" no";mark="✕";} }
+    else if(picked){c+=" pick";mark="✓";}
+    h+=`<button class="${c}" data-act="kpick" data-i="${i}" ${V.checked?"disabled":""}><span class="box">${mark}</span><span>${esc(s)}</span></button>`;
+  });
+  if(!V.checked)h+=`<button class="btn wide" data-act="nCheck" ${V.picks.length===need?"":"disabled"}>${V.picks.length===need?"對答案":`已選 ${V.picks.length} / ${need}`}</button>`;
+  else{const got=V.picks.filter(i=>K.k.includes(i)).length;
+    h+=`<div class="fb"><b class="${got===need?"ok":got>0?"half":"no"}">抓到 ${got} / ${need} 個重點</b>　${esc(K.w)}${got<need?"　黃色框是漏掉的重點。":""}</div><button class="btn wide" style="margin-top:12px" data-act="toQuiz">去答題 →</button>`;}
+  return h;
+}
+
+/* ---------- PRACTICE / PASTE reading ---------- */
+function startArticle(p){
+  V={view:p.paste?"pread":"read",p,t0:Date.now(),newWords:0,picks:new Array(p.paras.length).fill(-1),checked:false,qi:0,ans:[],gist:""};
+  render();window.scrollTo({top:0});
+}
+function lookup(word,g){
+  const l=word.toLowerCase().replace(/[’']s$/,"").replace(/[’']$/,"");
+  const c=[l,l.replace(/s$/,""),l.replace(/es$/,""),l.replace(/ies$/,"y"),l.replace(/ed$/,""),l.replace(/d$/,""),l.replace(/ing$/,""),l.replace(/ly$/,"")];
+  for(const k of c){if(g&&g[k])return {k,zh:g[k]};}
+  const j=S.jar.find(x=>c.includes(x.w));
+  if(j&&j.zh)return {k:j.w,zh:j.zh};
+  return {k:l,zh:""};
+}
+function sentHTML(raw,pi,si,g){
+  return raw.split(/([A-Za-z][A-Za-z'’-]*)/).map((x,i)=>{
+    if(i%2===0)return esc(x);
+    const L=lookup(x,g);const cls=["w"];if(g&&g[L.k])cls.push("gl");if(inJar(L.k))cls.push("inj");
+    return `<span class="${cls.join(" ")}" data-act="word" data-w="${esc(x)}" data-p="${pi}" data-s="${si}">${esc(x)}</span>`;
+  }).join("");
+}
+function passageHTML(p,tappable){return `<div class="passage">${p.paras.map((pa,pi)=>`<p><span class="pnum">¶${pi+1}</span>${pa.s.map((s,si)=>tappable?sentHTML(s,pi,si,p.g):esc(s)).join(" ")}</p>`).join("")}</div>`;}
+function pSteps(cur){return stepsHTML(V.p.paste?["讀","抓重點","摘要"]:["讀","抓重點","答題"],cur);}
+function sourcesHTML(p){
+  if(!p.sources||!p.sources.length)return "";
+  return `<div class="card small" style="margin:0 0 14px"><b>本文根據這些報導改寫，事實已交叉比對：</b><ul class="tip-list">${p.sources.map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name||hostOf(s.url))}</a></li>`).join("")}</ul><div class="muted" style="margin-top:6px">稿件為本遊戲根據以上報導原創撰寫，不是原報導全文；文中提到的發言皆為轉述。</div></div>`;
+}
+function vRead(){
+  const p=V.p;
+  return `${pSteps(0)}<div class="row" style="justify-content:space-between"><span class="chip">${p.paste?esc(hostOf(p.url)||"自己貼的文章"):(p.orig?"原創報導・"+esc(p.topic||""):"練習稿")+"・"+LEVELS[p.lv].n}</span>
+  <label class="toggle" for="hintT"><input type="checkbox" id="hintT" data-act="hints" ${S.hints?"checked":""}>虛線提示生字</label></div>
+  <h2 class="art-title">${esc(p.title)}</h2>${p.zh?`<div class="muted small">${esc(p.zh)}</div>`:""}
+  <p class="small muted">不懂的字直接點，可以看意思、放進單字罐。正常速度讀完一遍就好。</p>
+  ${p.orig?`<div class="small muted" style="margin:-4px 0 12px">📍 ${esc(p.place||"")}・${esc(p.date||"")}</div>`:""}
+  ${passageHTML(p,true)}${p.orig?sourcesHTML(p):""}<button class="btn wide" data-act="doneRead">讀完了，去抓重點 →</button>`;
+}
+function openWord(w,pi,si){
+  const p=V.p;const L=lookup(w,p.g);const ctx=p.paras[pi].s[si];const has=inJar(L.k);
+  const re=new RegExp("\\b("+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")\\b");
+  $("#layer").innerHTML=`<div class="scrim" data-act="closeSheet"><div class="sheet" role="dialog" aria-label="查單字" data-stop="1">
+    <div class="row" style="justify-content:space-between"><span class="sw">${esc(L.k)}</span><button class="xbtn" data-act="closeSheet" aria-label="關閉">✕</button></div>
+    ${L.zh?`<div style="font-size:17px;margin:4px 0 10px">${esc(L.zh)}</div>`:`<label class="small muted" for="myZh">沒有內建解釋，可以自己寫下意思（也可以留空）</label><input type="text" id="myZh" placeholder="例如：加速" style="margin:6px 0 10px">`}
+    <div class="rv-ctx" style="font-size:15px">${esc(ctx).replace(re,"<mark>$1</mark>")}</div>
+    <div class="row" style="margin-top:12px">${has?`<span class="chip">已經在單字罐裡了</span>`:`<button class="btn" data-act="addWord" data-k="${esc(L.k)}" data-zh="${esc(L.zh)}" data-p="${pi}" data-s="${si}">放進單字罐</button>`}</div>
+  </div></div>`;
+}
+function closeSheet(){$("#layer").innerHTML="";}
+function jarPush(w,zh,ctx,src){if(inJar(w))return false;S.jar.push({w:w.toLowerCase(),zh,ctx,src,box:0,due:today(),added:today(),ok:0,ng:0});V.newWords=(V.newWords||0)+1;save();return true;}
+function vKeys(){
+  const p=V.p,paste=!!p.paste,canCheck=p.paras.every(pa=>typeof pa.k==="number");
+  let h=`${pSteps(1)}<h2 style="margin-top:0">每段選一句「最能代表這段」的句子</h2>
+  <p class="small muted">小訣竅：主題句常在段首；看到 <b>However / Yet / But</b> 轉折，或 <b>In other words / As a result</b> 總結，重點常在它後面。舉例句（for example）通常不是重點。</p>`;
+  p.paras.forEach((pa,pi)=>{
+    const pick=V.picks[pi];
+    h+=`<div class="para-card ${V.checked?"locked":""}"><div class="lab">第 ${pi+1} 段</div>`+pa.s.map((s,si)=>{
+      let c="sent";
+      if(V.checked&&canCheck){if(si===pa.k)c+=" ok";else if(si===pick&&(pa.a||[]).includes(si))c+=" half";else if(si===pick)c+=" no";}
+      else if(si===pick)c+=" pick";
+      return `<span class="${c}" data-act="pick" data-p="${pi}" data-s="${si}" role="button" tabindex="0">${esc(s)}</span>`;
+    }).join(" ");
+    if(V.checked&&canCheck){const r=pick===pa.k?["ok","抓到了！"]:(pa.a||[]).includes(pick)?["half","算對一半"]:["no","差一點"];h+=`<div class="fb"><b class="${r[0]}">${r[1]}</b> ${esc(pa.w||"")}</div>`;}
+    h+=`</div>`;
+  });
+  const all=V.picks.every(x=>x>=0);
+  if(!V.checked){
+    if(paste){
+      h+=AI?`<button class="btn wide" data-act="pasteCheck" ${all&&!V.busy?"":"disabled"}>${V.busy?'<span class="spinner"></span>Claude 正在對答案…':"請 Claude 對答案"}</button><button class="btn ghost wide" style="margin-top:8px" data-act="toGist" ${all?"":"disabled"}>不用對答案，直接寫摘要</button>`
+          :`<button class="btn wide" data-act="toGist" ${all?"":"disabled"}>選好了，寫一句話摘要 →</button>`;
+      if(V.err)h+=`<p class="small" style="color:var(--bad)">${esc(V.err)}</p>`;
+    } else h+=`<button class="btn wide" data-act="checkKeys" ${all?"":"disabled"}>${all?"對答案":"每段都選一句才能對答案"}</button>`;
+  } else h+=paste?`<button class="btn wide" data-act="toGist">寫一句話摘要 →</button>`:`<button class="btn wide" data-act="toQuiz">去答題 →</button>`;
+  return h;
+}
+
+/* ---------- QUIZ ---------- */
+function vQuiz(){
+  const p=V.p,qs=p.q,i=V.qi,q=qs[i],a=V.ans[i],L="ABCD";
+  const steps=p.desk?stepsHTML(DSTEPS,4):p.news?stepsHTML(NSTEPS,3):pSteps(2);
+  let h=`${steps}<div class="row" style="justify-content:space-between"><span class="chip red">${QTYPE[q.y]||"題目"}</span><span class="small muted">第 ${i+1} / ${qs.length} 題</span></div>${p.desk?`<div class="letter">✉️ 讀者來信</div>`:""}<div class="q-text">${esc(q.t)}</div>`;
+  q.o.forEach((o,oi)=>{let c="opt";if(a!==undefined){if(oi===q.a)c+=" right";else if(oi===a)c+=" wrong";}
+    h+=`<button class="${c}" data-act="answer" data-o="${oi}" ${a!==undefined?"disabled":""}><span class="L">${L[oi]}</span><span>${esc(o)}</span></button>`;});
+  if(a!==undefined)h+=`<div class="explain"><b style="color:${a===q.a?"var(--good)":"var(--bad)"}">${a===q.a?"答對了":"正解是 "+L[q.a]}</b>　${esc(q.e||"")}</div><button class="btn wide" data-act="nextQ">${i+1<qs.length?"下一題 →":"看結果"}</button>`;
+  if(p.desk)h+=`<details class="peek"><summary>回稿件看一下</summary>${passageHTML(p,false)}</details>`;
+  else if(p.news)h+=`<p class="small" style="margin-top:16px"><a href="${esc(p.url)}" target="_blank" rel="noopener">回原文再看一下 ↗</a></p>`;
+  else h+=`<details class="peek"><summary>回原文看一下</summary>${passageHTML(p,false)}</details>`;
+  return h;
+}
+/* ---------- DESK (editor tasks on original reports) ---------- */
+const DSTEPS=["讀稿","下標","抓錯","砍稿","讀者來信"];
+function openDesk(p){V={view:"desk",p,stage:"read",d:{head:null,errPick:null,errHit:false,cut:null},qi:0,ans:[],newWords:0,t0:Date.now()};render();window.scrollTo({top:0});}
+function deskParas(showWrong){const p=V.p;return p.paras.map((pa,pi)=>({s:pa.s.map((s,si)=>(showWrong&&pi===p.err.p&&si===p.err.s)?p.err.wrong:s),k:pa.k,a:pa.a,w:pa.w}));}
+function vDesk(){
+  const p=V.p,D=V.d,st=V.stage,idx={read:0,head:1,err:2,cut:3}[st];
+  let h=stepsHTML(DSTEPS,idx)+`<div class="row"><span class="chip">SLUG: ${esc(p.slug)}</span><span class="chip">${esc(p.topic)}</span><span class="chip red">${LEVELS[p.lv].n}</span><span class="small muted">📍 ${esc(p.place)}</span></div>`;
+  const view={...p,paras:deskParas(st!=="cut")};
+  if(st==="read"){
+    h+=`<div class="memo"><b>主編留言：</b>這篇是今天的 ${esc(p.zh)}。先完整讀一遍，不懂的字點一下。等一下要妳下標題、檢查有沒有寫錯的地方，版面不夠還要砍一段。</div>
+    <div class="row" style="justify-content:flex-end"><label class="toggle" for="hintT"><input type="checkbox" id="hintT" data-act="hints" ${S.hints?"checked":""}>虛線提示生字</label></div>
+    ${passageHTML(view,true)}<button class="btn wide" data-act="dNext" data-to="head">讀完了，去下標題 →</button>`;
+  } else if(st==="head"){
+    h+=`<h2 style="margin-top:0">幫這篇下標題</h2><p class="small muted">好標題要抓到整篇最重要的事，不能誇大，也不能寫文中沒有的內容。</p>`;
+    p.heads.o.forEach((o,i)=>{let c="opt";if(D.head!==null){if(i===p.heads.a)c+=" right";else if(i===D.head)c+=" wrong";}h+=`<button class="${c} hd" data-act="dHead" data-i="${i}" ${D.head!==null?"disabled":""}><span class="L">${"ABCD"[i]}</span><span>${esc(o)}</span></button>`;});
+    if(D.head!==null)h+=`<div class="explain"><b style="color:${D.head===p.heads.a?"var(--good)":"var(--bad)"}">${D.head===p.heads.a?"好標題！":"主編改用了 "+"ABCD"[p.heads.a]}</b>　${esc(p.heads.e)}</div><button class="btn wide" data-act="dNext" data-to="err">下一個任務：抓錯 →</button>`;
+    h+=`<details class="peek"><summary>回稿件看一下</summary>${passageHTML(view,false)}</details>`;
+  } else if(st==="err"){
+    h+=`<h2 style="margin-top:0">稿子裡混進了一句錯誤</h2><p class="small muted">有一句的內容和文章其他地方互相矛盾。找出來點它。線索：數字、前後因果、轉折詞。</p>`;
+    view.paras.forEach((pa,pi)=>{
+      h+=`<div class="para-card ${D.errPick?"locked":""}"><div class="lab">第 ${pi+1} 段</div>`+pa.s.map((s,si)=>{
+        const isErr=pi===p.err.p&&si===p.err.s, picked=D.errPick&&D.errPick[0]===pi&&D.errPick[1]===si;
+        let c="sent";if(D.errPick){if(isErr)c+=" ok";else if(picked)c+=" no";}
+        return `<span class="${c}" data-act="dErr" data-p="${pi}" data-s="${si}" role="button" tabindex="0">${esc(s)}</span>`;}).join(" ")+`</div>`;
+    });
+    if(D.errPick)h+=`<div class="explain"><b style="color:${D.errHit?"var(--good)":"var(--bad)"}">${D.errHit?"抓到了！":"錯的是綠色那句"}</b>　${esc(p.err.e)}<div style="margin-top:6px"><b>正確應該是：</b><span style="font-family:var(--f-read)">${esc(p.paras[p.err.p].s[p.err.s])}</span></div></div><button class="btn wide" data-act="dNext" data-to="cut">下一個任務：砍稿 →</button>`;
+  } else if(st==="cut"){
+    h+=`<h2 style="margin-top:0">版面不夠，要砍掉一段</h2><p class="small muted">選一段刪掉後，讀者「最不會漏掉重點」的段落。錯誤已經幫妳改好了。</p>`;
+    p.paras.forEach((pa,pi)=>{
+      let c="kp";if(D.cut!==null){if(pi===p.cut.p)c+=" ok";else if((p.cut.a||[]).includes(pi)&&pi===D.cut)c+=" miss";else if(pi===D.cut)c+=" no";}
+      h+=`<button class="${c}" data-act="dCut" data-i="${pi}" ${D.cut!==null?"disabled":""}><span class="box">${pi+1}</span><span>${esc(pa.s.join(" "))}${D.cut!==null?`<span class="note">編輯筆記：重點句是「${esc(pa.s[pa.k])}」— ${esc(pa.w||"")}</span>`:""}</span></button>`;
+    });
+    if(D.cut!==null){const ok=D.cut===p.cut.p,half=(p.cut.a||[]).includes(D.cut);h+=`<div class="explain"><b style="color:${ok?"var(--good)":half?"var(--warn)":"var(--bad)"}">${ok?"砍得好！":half?"也說得通，算對一半":"這段刪掉會漏重點"}</b>　${esc(p.cut.e)}</div>${sourcesHTML(p)}<button class="btn wide" data-act="dNext" data-to="mail">最後：回覆讀者來信 →</button>`;}
+  }
+  return h;
+}
+
+/* ---------- finishing & stamps ---------- */
+function makeStamp(p){
+  const id="st"+Date.now();
+  if(p.news){const parts=(p.place||"").split(",").map(s=>s.trim());return {id,date:today(),top:parts[0]||"WORLD",bot:parts.length>1?parts[parts.length-1]:(p.topic||""),country:parts.length>1?parts[parts.length-1]:parts[0],src:p.src,title:p.title,ink:INKS[hash(p.id)%5],round:true};}
+  if(p.desk||p.orig){const parts=(p.place||"").split(",").map(s=>s.trim());return {id,date:today(),top:parts[0]||"WORLD",bot:parts.length>1?parts[parts.length-1]:(p.topic||""),country:parts.length>1?parts[parts.length-1]:parts[0],src:p.desk?"編輯台稿件":"原創報導",title:p.title,ink:INKS[hash(p.id)%5],round:true};}
+  if(p.paste){const h=hostOf(p.url);return {id,date:today(),top:h?h.split(".")[0]:"MY PICK",bot:"自選",country:"",src:h,title:p.title,ink:INKS[hash(id)%5],round:false};}
+  return {id,date:today(),top:"PRACTICE",bot:p.topic||"",country:"",src:"練習稿",title:p.title,ink:INKS[hash(p.id)%5],round:false};
+}
+function stampHTML(s,isNew){
+  const r=(hash(s.id)%17)-8;
+  return `<div class="stamp ${s.round?"":"sq"} ${isNew?"new":""}" style="--ink-c:var(${s.ink});--r:${r}deg;transform:rotate(${r}deg)" title="${esc(s.title)}"><div><div class="t">${esc(s.top)}</div><div class="d">${stampDate(s.date)}</div><div class="b">${esc(s.bot)}</div></div></div>`;
+}
+function finishArticle(){
+  const p=V.p,t=today();
+  if(!S.days.includes(t))S.days.push(t);
+  const secs=p.news?(V.tRead||p.mins*60):Math.max(20,V.tRead||60);
+  const wpm=Math.round(wordsIn(p)/(secs/60));
+  let res={wpm:secs>=20?wpm:null,newWords:V.newWords||0};
+  if(p.desk){
+    const D=V.d, tasks=(D.head===p.heads.a?1:0)+(D.errHit?1:0)+(D.cut===p.cut.p?1:(p.cut.a||[]).includes(D.cut)?.5:0);
+    const qc=V.ans.filter((x,i)=>x===p.q[i].a).length;
+    const score=0.5*tasks/3+0.5*qc/p.q.length, stars=score>=.85?3:score>=.6?2:1;
+    Object.assign(res,{ks:tasks,kn:3,qc,qn:p.q.length,score,stars,tasksLabel:"編輯任務"});
+  }
+  else if(p.q&&p.q.length){
+    let kr=null,ks=null,kn=null;
+    if(p.news){kn=p.keys.k.length;ks=V.picks.filter(i=>p.keys.k.includes(i)).length;kr=ks/kn;}
+    else if(p.paras.every(pa=>typeof pa.k==="number")){kn=p.paras.length;ks=0;p.paras.forEach((pa,i)=>{if(V.picks[i]===pa.k)ks+=1;else if((pa.a||[]).includes(V.picks[i]))ks+=.5;});kr=ks/kn;}
+    const qc=V.ans.filter((a,i)=>a===p.q[i].a).length,qr=qc/p.q.length;
+    const score=kr===null?qr:0.4*kr+0.6*qr, stars=score>=.85?3:score>=.6?2:1;
+    Object.assign(res,{ks,kn,qc,qn:p.q.length,score,stars});
+  }
+  if(res.score!==undefined&&!p.paste){{
+      const prev=S.done[p.id],score=res.score;S.done[p.id]={best:Math.max(res.stars,prev?prev.best:0),times:(prev?prev.times:0)+1};
+      if(score>=.8&&p.lv>=S.rec){S.hi++;if(S.hi>=2&&S.rec<3){S.rec++;S.hi=0;res.levelUp=true;}}
+      else if(score<.5&&p.lv<=S.rec){S.hi=0;if(S.rec>1){S.rec--;res.levelDown=true;}}
+      else if(score<.8)S.hi=0;
+      if(!prev)res.stamp=makeStamp(p);
+      const before=rankOf(S.xp||0).i;res.xp=Math.round(res.score*30)+(prev?0:10);S.xp=(S.xp||0)+res.xp;if(rankOf(S.xp).i>before)res.promo=rankOf(S.xp).name;
+  }}
+  if(p.paste){res.stamp=makeStamp(p);res.xp=10;S.xp=(S.xp||0)+10;}
+  if(res.stamp)S.stamps.push(res.stamp);
+  S.log.push({id:p.paste?"paste":p.id,title:p.title,zh:p.zh||"",topic:p.topic||"",date:t,wpm:res.wpm,score:res.score??null,stars:res.stars||0});
+  save();V.res=res;V.view="result";render();window.scrollTo({top:0});
+}
+function vResult(){
+  const r=V.res,p=V.p;
+  let h=`<div class="result card">`;
+  if(r.stars)h+=`<div class="big-stars">${starsHTML(r.stars,"")}</div><h2 style="margin:4px 0">${r.stars===3?"漂亮！重點全抓到了":r.stars===2?"很不錯，再多讀幾則":"完成了！下一則會更順"}</h2>`;
+  else h+=`<h2 style="margin:4px 0">今天這篇讀完了</h2>`;
+  h+=`<div class="muted small">${esc(p.title)}</div><div class="rgrid">`;
+  if(r.kn)h+=`<div class="stat"><b>${r.ks}/${r.kn}</b><span>${r.tasksLabel||"抓重點"}</span></div>`;
+  if(r.qn)h+=`<div class="stat"><b>${r.qc}/${r.qn}</b><span>答對</span></div>`;
+  h+=`<div class="stat"><b>${r.wpm??"—"}</b><span>每分鐘字數</span></div><div class="stat"><b>${r.newWords}</b><span>新收單字</span></div></div>`;
+  if(r.xp)h+=`<p class="chip">+${r.xp} XP</p> `;
+  if(r.promo)h+=`<p class="chip red">升職了！現在是「${esc(r.promo)}」</p>`;
+  if(r.levelUp)h+=`<p class="chip">連續兩篇表現很好，推薦難度升到 ${LEVELS[S.rec].n}</p>`;
+  if(r.levelDown)h+=`<p class="chip red">先回到 ${LEVELS[S.rec].n} 多練幾篇</p>`;
+  h+=`</div>`;
+  if(r.stamp)h+=`<h2>護照蓋上新的章</h2><div class="visa" style="display:flex;align-items:center;gap:16px">${stampHTML(r.stamp,true)}<div class="small"><b>${esc(r.stamp.top)}</b><br><span class="muted">${esc(r.stamp.src||"")}</span><br>${esc(p.zh||p.title)}</div></div>`;
+  else if(!p.paste)h+=`<p class="small muted" style="margin-top:12px">這篇之前讀過了，星星記錄最好的一次。讀新的一則才會蓋新章。</p>`;
+  if(SY.on&&!p.paste){const liked=(S.likes||[]).some(l=>l.t===p.title);h+=`<div class="row" style="margin-top:14px;justify-content:center"><button class="btn ghost" data-act="like">${liked?"♥ 已標記喜歡":"♡ 我喜歡這類新聞"}</button><button class="btn ghost" data-act="recOpen" data-nid="${esc(p.id)}">推薦給${NM[PT]}</button></div>`;}
+  else if(SY.on&&p.paste&&p.url)h+=`<div class="row" style="margin-top:14px;justify-content:center"><button class="btn ghost" data-act="recOpen" data-url="${esc(p.url)}" data-title="${esc(p.title)}">把這篇推薦給${NM[PT]}</button></div>`;
+  h+=`<div class="stack" style="margin-top:16px"><button class="btn wide" data-act="tab" data-v="news">回編輯台處理下一篇</button>${S.jar.length?`<button class="btn ghost wide" data-act="startReview" data-all="1">複習單字罐</button>`:""}</div>`;
+  return h;
+}
+
+/* ---------- PASSPORT ---------- */
+function vPassport(){
+  const countries=new Set(S.stamps.filter(s=>s.country).map(s=>s.country));
+  let h=`<div class="stats"><div class="stat"><b>${S.stamps.length}</b><span>章</span></div><div class="stat"><b>${countries.size}</b><span>國家</span></div><div class="stat"><b>${streak()}</b><span>連續天數</span></div><div class="stat"><b>${S.jar.filter(w=>w.box>=5).length}</b><span>記住的字</span></div></div>
+  <h2>簽證頁</h2><div class="visa">`;
+  h+=S.stamps.length?`<div class="stamps">${S.stamps.slice().reverse().map(s=>stampHTML(s,false)).join("")}</div>`
+    :`<div class="empty-visa">還沒有章。讀完第一則新聞，這裡就會蓋上那則新聞發生地的章。</div>`;
+  h+=`</div>`;
+  const recent=S.log.slice(-8).reverse();
+  if(recent.length)h+=`<h2>最近讀的</h2><div class="jar-list">${recent.map(l=>`<div class="jw"><span class="wd" style="font-weight:400">${esc(l.title||"")}</span><span class="small muted">${l.date.slice(5)}${l.wpm?" ・ "+l.wpm+" wpm":""}</span></div>`).join("")}</div>`;
+  h+=sentHTML();
+  h+=`<div class="row" style="margin-top:22px"><button class="btn ghost" data-act="tab" data-v="backup">備份／還原進度</button></div>`;
+  return h;
+}
+function vBackup(){
+  let code="";try{code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));}catch(e){}
+  return `<h2 style="margin-top:0">備份與還原</h2><p class="small muted">進度存在這台裝置的瀏覽器裡。換手機或清除瀏覽資料前，先把備份碼複製起來（貼到記事本或傳給自己）。</p>
+  <textarea id="bk" rows="4" readonly>${esc(code)}</textarea><div class="row" style="margin:8px 0 22px"><button class="btn" data-act="copyBk">複製備份碼</button></div>
+  <h3>還原</h3><p class="small muted">貼上之前的備份碼，會取代目前的進度。</p>
+  <textarea id="rs" rows="4" placeholder="把備份碼貼在這裡"></textarea><div class="row" style="margin-top:8px"><button class="btn red" data-act="restore">還原進度</button><button class="btn ghost" data-act="tab" data-v="passport">返回</button></div>`;
+}
+
+/* ---------- JAR ---------- */
+function vJar(){
+  const due=dueWords(),dried=S.jar.filter(w=>w.box>=5).length;
+  let h=`<h2 style="margin-top:0">單字罐</h2><p class="small muted">點過的字都在這裡。每個字會隔 1、3、7、14 天再出現，答對五次就算真正記住。</p>
+  <div class="stats" style="grid-template-columns:repeat(3,1fr)"><div class="stat"><b>${S.jar.length}</b><span>全部</span></div><div class="stat"><b>${due.length}</b><span>今天該複習</span></div><div class="stat"><b>${dried}</b><span>已記住</span></div></div>
+  <div class="row" style="margin:14px 0">${due.length?`<button class="btn" data-act="startReview">複習到期的 ${Math.min(due.length,12)} 個</button>`:""}${S.jar.length>=4?`<button class="btn ghost" data-act="startReview" data-all="1">隨機練一輪</button>`:""}</div>`;
+  if(!S.jar.length)h+=`<div class="card small muted">還沒有單字。讀新聞前的生字表、或文章裡不會的字，點一下就會放進來。</div>`;
+  else h+=`<div class="jar-list">${S.jar.slice().reverse().map(w=>`<div class="jw"><span class="wd">${esc(w.w)}</span><span class="zh">${esc(w.zh||"（沒寫意思）")}</span><span class="pips" aria-label="熟練度 ${w.box}/5">${[0,1,2,3,4].map(i=>`<i class="${i<w.box?"on":""}"></i>`).join("")}</span><button class="xbtn" data-act="delWord" data-w="${esc(w.w)}" aria-label="刪除 ${esc(w.w)}">×</button></div>`).join("")}</div>`;
+  return h;
+}
+function startReview(all){
+  const list=all?shuffle(S.jar).slice(0,12):shuffle(dueWords()).slice(0,12);
+  if(!list.length){toast("目前沒有要複習的字");return;}
+  V={view:"review",list,i:0,ans:null,right:0,flip:false,opts:null};render();window.scrollTo({top:0});
+}
+function vReview(){
+  const R=V;
+  if(R.i>=R.list.length)return `<div class="card result"><h2>這輪複習完了</h2><p>答對 <b>${R.right}</b> / ${R.list.length}</p><p class="small muted">還沒記住的字，過幾天會再出現。</p><div class="stack"><button class="btn wide" data-act="tab" data-v="news">去讀新聞</button><button class="btn ghost wide" data-act="tab" data-v="jar">看單字罐</button></div></div>`;
+  const w=R.list[R.i];
+  const ctx=w.ctx?esc(w.ctx).replace(new RegExp("\\b("+w.w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\w*)","i"),"<mark>$1</mark>"):"";
+  let h=`<div class="row" style="justify-content:space-between"><span class="chip">單字複習</span><span class="small muted">${R.i+1} / ${R.list.length}</span></div>
+  <div class="rv-word">${esc(w.w)}</div>${ctx?`<div class="rv-ctx">${ctx}</div>`:`<div class="small muted" style="text-align:center">出自：${esc(w.src||"")}</div>`}<p class="small muted" style="margin:10px 0">它是什麼意思？</p>`;
+  const pool=[...new Set(S.jar.filter(x=>x.zh&&x.w!==w.w).map(x=>x.zh).concat(PASSAGES.flatMap(p=>Object.values(p.g))).concat(NEWS_LIST.flatMap(n=>Object.values(n.vocab||{}))).filter(z=>z&&z!==w.zh))];
+  if(w.zh&&pool.length>=3){
+    if(!R.opts)R.opts=shuffle([w.zh].concat(shuffle(pool).slice(0,3)));
+    R.opts.forEach((o,oi)=>{let c="opt";if(R.ans!==null){if(o===w.zh)c+=" right";else if(oi===R.ans)c+=" wrong";}h+=`<button class="${c}" data-act="rvAns" data-o="${oi}" ${R.ans!==null?"disabled":""} style="font-family:var(--f-ui)"><span class="L">${"ABCD"[oi]}</span><span>${esc(o)}</span></button>`;});
+    if(R.ans!==null)h+=`<button class="btn wide" data-act="rvNext">下一個 →</button>`;
+  } else {
+    if(!R.flip)h+=`<button class="btn wide" data-act="rvFlip">想好了，看答案</button>`;
+    else h+=`<div class="explain">${esc(w.zh||"妳沒有寫下意思。想得起來嗎？")}</div><div class="row"><button class="btn" data-act="rvSelf" data-ok="1">記得</button><button class="btn ghost" data-act="rvSelf" data-ok="0">忘了</button></div>`;
+  }
+  return h;
+}
+function grade(w,ok){
+  const j=S.jar.find(x=>x.w===w.w);if(!j)return;
+  if(ok){j.box=Math.min(5,j.box+1);j.ok++;j.due=addDays(today(),BOX_DAYS[Math.min(j.box,4)]||14);V.right++;}
+  else{j.box=Math.max(0,j.box-1);j.ng++;j.due=today();}
+  save();
+}
+
+/* ---------- PASTE ---------- */
+function vPaste(){
+  let h=`<h2 style="margin-top:0">貼一篇妳有興趣的文章</h2>
+  <p class="small muted">BBC 或任何英文文章都可以。貼上連結和內文：一樣點生字收進單字罐 → 每段抓一句重點 → 用一句話寫出全文在講什麼。${AI?"Claude 會幫妳對重點、看摘要，再出三題。":"這裡沒有標準答案，照提示自己檢查就好。"}讀完也會蓋一個章。</p>
+  <label class="small muted" for="pUrl">文章連結</label><input type="url" id="pUrl" placeholder="https://www.bbc.com/news/…" style="margin:4px 0 8px">
+  <label class="small muted" for="pTitle">標題（可空白）</label><input type="text" id="pTitle" style="margin:4px 0 8px">
+  <label class="small muted" for="pText">內文</label><textarea id="pText" rows="9" placeholder="把文章內文複製貼在這裡，段落之間換行即可。" style="margin-top:4px"></textarea>
+  <p class="small muted">建議一次貼 3–8 段。文章只存在妳自己的瀏覽器裡。</p>
+  <button class="btn wide" data-act="pasteGo">開始讀</button>
+  <button class="btn ghost wide" style="margin-top:8px" data-act="wishAdd">只有連結，先存進「想讀」</button>${SY.on?`<button class="btn ghost wide" style="margin-top:8px" data-act="recFromPaste">把這個連結推薦給${NM[PT]}</button>`:""}${V.err?`<p class="small" style="color:var(--bad)">${esc(V.err)}</p>`:""}`;
+  if(S.wish.length)h+=`<h2>想讀清單</h2><p class="small muted">有空時打開，把內文貼回上面就能開始。</p><div class="jar-list wishlist">${S.wish.slice().reverse().map(u=>`<div class="jw"><a class="wd" style="font-weight:400" href="${esc(u)}" target="_blank" rel="noopener">${esc(hostOf(u))}<br><span class="small muted">${esc(u.length>70?u.slice(0,70)+"…":u)}</span></a><button class="btn ghost" style="padding:6px 10px" data-act="wishUse" data-u="${esc(u)}">貼內文</button>${SY.on?`<button class="btn ghost" style="padding:6px 10px" data-act="recOpen" data-url="${esc(u)}" data-title="${esc(hostOf(u))}">推薦</button>`:""}<button class="xbtn" data-act="wishDel" data-u="${esc(u)}" aria-label="移除">×</button></div>`).join("")}</div>`;
+  return h;
+}
+function splitSentences(t){return t.replace(/\s+/g," ").trim().split(/(?<=[.!?]["”’']?)\s+(?=["“‘']?[A-Z0-9])/).map(s=>s.trim()).filter(Boolean);}
+function pasteGo(){
+  const url=$("#pUrl").value.trim(),title=$("#pTitle").value.trim()||(hostOf(url)?hostOf(url)+" 的文章":"自己貼的文章"),txt=$("#pText").value.trim();
+  if(txt.split(/\s+/).length<60){V.err=url&&!txt?"連結本身讀不到內容，要把文章內文也貼進來（或先存進「想讀」）。":"內文有點短，至少貼一兩段（60 字以上）再開始。";render();if(url)$("#pUrl").value=url;return;}
+  let paras=txt.split(/\n\s*\n|\n/).map(x=>x.trim()).filter(x=>x.split(/\s+/).length>=6).map(x=>({s:splitSentences(x)})).filter(pa=>pa.s.length);
+  const merged=[];for(const pa of paras){const last=merged[merged.length-1];if(last&&(last.s.length<2||pa.s.length<2)&&last.s.length+pa.s.length<=4)last.s=last.s.concat(pa.s);else merged.push({s:pa.s.slice()});}
+  S.wish=S.wish.filter(u=>u!==url);save();
+  startArticle({id:"paste-"+Date.now(),paste:true,lv:0,title,url,topic:"自選",paras:merged.slice(0,10),g:{},q:[]});
+}
+async function pasteCheck(){
+  const p=V.p;V.busy=true;V.err="";render();
+  const words=S.jar.filter(j=>j.src===p.title&&!j.zh).map(j=>j.w);
+  const body=p.paras.map((pa,i)=>`Paragraph ${i+1}:\n`+pa.s.map((s,j)=>`  [${j}] ${s}`).join("\n")).join("\n");
+  const prompt=`You are a kind English reading coach for a Taiwanese student preparing for an English reading exam. She read the article below and picked, for each paragraph, the sentence she thinks best represents it.
+
+${body}
+
+Her picks (0-based sentence index per paragraph): ${JSON.stringify(V.picks)}
+Words she did not know: ${JSON.stringify(words)}
+
+Return ONLY a JSON object:
+{"paras":[{"k":<best key sentence index>,"a":[<other acceptable indices>],"w":"<one sentence in Traditional Chinese explaining why, naming any signal words>"}] (one per paragraph, same order),
+ "words":{"<word>":"<Traditional Chinese meaning as used in this article>"},
+ "q":[3 multiple-choice questions in exam style: {"y":"main|detail|vocab|infer|purpose|attitude","t":"question in English","o":["4 options"],"a":<correct index>,"e":"<short explanation in Traditional Chinese>"}]}
+Vary the position of correct answers. Do not quote long passages. Be encouraging but accurate.`;
+  try{
+    const v=await askJSON(prompt);
+    if(!v||!Array.isArray(v.paras)||v.paras.length!==p.paras.length)throw new Error("回傳格式不對，再試一次看看");
+    v.paras.forEach((r,i)=>{const n=p.paras[i].s.length;p.paras[i].k=Math.min(n-1,Math.max(0,r.k|0));p.paras[i].a=(r.a||[]).filter(x=>x>=0&&x<n);p.paras[i].w=r.w||"";});
+    if(v.words)for(const [w,zh] of Object.entries(v.words)){const j=S.jar.find(x=>x.w===w.toLowerCase());if(j&&!j.zh)j.zh=zh;}
+    p.q=(v.q||[]).filter(q=>q&&q.t&&Array.isArray(q.o)&&q.o.length===4&&q.a>=0&&q.a<4);
+    save();V.checked=true;V.busy=false;render();
+  }catch(e){V.busy=false;V.err=e&&e.code==="rate_limited"?"Claude 現在有點忙，等一下再試，或先直接寫摘要。":(e&&e.code==="not_granted"?"這裡無法使用 Claude，直接寫摘要也可以。":"沒有對到答案："+(e.message||"請再試一次"));render();}
+}
+function vGist(){
+  const p=V.p;
+  let h=`${pSteps(2)}<h2 style="margin-top:0">用一句話說：這篇在講什麼？</h2>
+  <p class="small muted">中文或英文都可以。把妳選的重點句串起來，通常就是答案。考試的主旨題就是在考這個。</p>
+  <div class="card small" style="margin-bottom:10px"><b>妳選的重點句：</b><ol class="tip-list">${p.paras.map((pa,i)=>`<li>${esc(pa.s[V.picks[i]]||"")}</li>`).join("")}</ol></div>
+  <textarea id="gist" rows="3" placeholder="這篇文章主要在說……">${esc(V.gist||"")}</textarea>`;
+  if(!p.paras.every(pa=>typeof pa.k==="number"))h+=`<div class="card small" style="margin-top:10px"><b>自己檢查：</b><ul class="tip-list"><li>有沒有涵蓋全文，而不是只講某一段？</li><li>有沒有把例子、數字當成重點？</li><li>作者最後若有轉折或結論，摘要有沒有包含？</li></ul></div>`;
+  h+=`<button class="btn wide" style="margin-top:12px" data-act="gistDone">${p.q&&p.q.length?"寫好了，做 Claude 出的三題 →":"寫好了，完成今天的閱讀"}</button>`;
+  return h;
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-act]");if(!el)return;
+  if(el.dataset.act==="closeSheet"&&e.target.closest("[data-stop]")&&!e.target.closest("button[data-act=closeSheet]"))return;
+  const d=el.dataset;
+  switch(d.act){
+    case "tab": go(d.v);break;
+    case "openNews": openNews(findP(d.id));break;
+    case "openDesk": openDesk(findP(d.id));break;
+    case "like": toggleLike(V.p);break;
+    case "recOpen": openRecSheet({nid:d.nid||"",url:d.url||"",title:d.title||""});break;
+    case "recFromPaste": {const u=$("#pUrl").value.trim();if(!/^https?:\/\//.test(u)){V.err="請先貼上以 http 開頭的連結。";render();break;}openRecSheet({url:u,title:$("#pTitle").value.trim()||hostOf(u)});break;}
+    case "recSend": sendRec();break;
+    case "recGo": openRecItem(d.id);break;
+    case "recReact": reactRec(d.id,d.r);break;
+    case "dNext": if(d.to==="mail"){V.view="quiz";V.qi=0;V.ans=[];if(!V.tRead)V.tRead=null;}else{if(d.to==="head")V.tRead=(Date.now()-V.t0)/1000;V.stage=d.to;}render();window.scrollTo({top:0});break;
+    case "dHead": V.d.head=+d.i;render();break;
+    case "dErr": if(V.d.errPick)return;V.d.errPick=[+d.p,+d.s];V.d.errHit=(+d.p===V.p.err.p&&+d.s===V.p.err.s);render();break;
+    case "dCut": V.d.cut=+d.i;render();break;
+    case "openPractice": startArticle(findP(d.id));break;
+    case "vocabAdd": if(jarPush(d.w,d.zh,"",V.p.title)){toast(`「${d.w}」放進單字罐了`);render();}else toast("已經在單字罐裡了");break;
+    case "openSrc": V.opened=true;V.t0=Date.now();setTimeout(render,50);break;
+    case "newsRead": V.tRead=V.opened?(Date.now()-V.t0)/1000:null;if(V.tRead!==null&&(V.tRead<30||V.tRead>3600))V.tRead=null;V.view="nkeys";render();window.scrollTo({top:0});break;
+    case "kpick": {const i=+d.i,need=V.p.keys.k.length;if(V.picks.includes(i))V.picks=V.picks.filter(x=>x!==i);else if(V.picks.length<need)V.picks.push(i);else toast(`最多選 ${need} 句，先取消一句`);render();break;}
+    case "nCheck": V.checked=true;render();break;
+    case "hints": S.hints=el.checked;save();document.body.classList.toggle("hints-off",!S.hints);break;
+    case "word": openWord(d.w,+d.p,+d.s);break;
+    case "closeSheet": closeSheet();break;
+    case "addWord": {let zh=d.zh;const my=$("#myZh");if(!zh&&my)zh=my.value.trim();jarPush(d.k,zh,V.p.paras[+d.p].s[+d.s],V.p.title);closeSheet();render();toast(`「${d.k}」放進單字罐了`);break;}
+    case "doneRead": V.tRead=(Date.now()-V.t0)/1000;V.view=V.p.paste?"pkeys":"keys";render();window.scrollTo({top:0});break;
+    case "pick": if(V.checked)return;V.picks[+d.p]=+d.s;render();break;
+    case "checkKeys": V.checked=true;render();break;
+    case "toQuiz": V.view="quiz";V.qi=0;V.ans=[];render();window.scrollTo({top:0});break;
+    case "answer": V.ans[V.qi]=+d.o;render();break;
+    case "nextQ": if(V.qi+1<V.p.q.length){V.qi++;render();window.scrollTo({top:0});}else finishArticle();break;
+    case "startReview": startReview(!!d.all);break;
+    case "rvAns": V.ans=+d.o;grade(V.list[V.i],V.opts[V.ans]===V.list[V.i].zh);render();break;
+    case "rvFlip": V.flip=true;render();break;
+    case "rvSelf": grade(V.list[V.i],d.ok==="1");V.i++;V.ans=null;V.flip=false;V.opts=null;render();break;
+    case "rvNext": V.i++;V.ans=null;V.opts=null;render();break;
+    case "delWord": S.jar=S.jar.filter(w=>w.w!==d.w);save();render();break;
+    case "pasteGo": pasteGo();break;
+    case "wishAdd": {const u=$("#pUrl").value.trim();if(!/^https?:\/\//.test(u)){V.err="請先貼上以 http 開頭的連結。";render();break;}if(!S.wish.includes(u))S.wish.push(u);save();V.err="";render();toast("存進想讀清單了");break;}
+    case "wishUse": render();$("#pUrl").value=d.u;$("#pText").focus();window.scrollTo({top:0});break;
+    case "wishDel": S.wish=S.wish.filter(u=>u!==d.u);save();render();break;
+    case "pasteCheck": pasteCheck();break;
+    case "toGist": V.view="pgist";render();window.scrollTo({top:0});break;
+    case "gistDone": V.gist=($("#gist")||{}).value||"";if(V.p.q&&V.p.q.length){V.view="quiz";V.qi=0;V.ans=[];render();window.scrollTo({top:0});}else finishArticle();break;
+    case "copyBk": navigator.clipboard.writeText($("#bk").value).then(()=>toast("備份碼已複製"),()=>{$("#bk").select();toast("請長按選取後複製");});break;
+    case "restore": try{const o=JSON.parse(decodeURIComponent(escape(atob($("#rs").value.trim()))));if(!o||o.v!==1)throw 0;S=Object.assign(fresh(),o);save();toast("進度已還原");go("news");}catch(_){toast("備份碼看起來不完整，請再貼一次");}break;
+  }
+});
+document.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches(".sent")){e.preventDefault();e.target.click();}
+  if(e.key==="Escape")closeSheet();
+});
+/* ---------- two-player sync (Firebase, shared with the garden) ---------- */
+const PAIR="HDzAwqJ7yVFqTTgJX3o1LMU3";
+const SY={on:false,db:null,partner:null,inbox:[],sent:[],timer:null,last:""};
+const REACTS={fun:"👍 有趣",hard:"🤯 好難",learn:"💡 學到了",meh:"😴 沒興趣"};
+function softRender(){if(["news","passport","paste"].includes(V.view)&&!$("#layer").innerHTML)render();}
+function clip(s,n){return String(s??"").slice(0,n);}
+function cleanProfile(d){if(!d||typeof d!=="object")return null;const n=(v,a,b)=>Math.max(a,Math.min(b,Math.floor(+v||0)));
+  return {xp:n(d.xp,0,1e7),stk:n(d.stk,0,1e5),td:n(d.td,0,999),wk:n(d.wk,0,9999),n:n(d.n,0,1e6),stamps:n(d.stamps,0,1e6),countries:n(d.countries,0,999),words:n(d.words,0,1e6),
+    recent:(Array.isArray(d.recent)?d.recent:[]).slice(0,6).map(r=>({t:clip(r&&r.t,120),z:clip(r&&r.z,40),tp:clip(r&&r.tp,20),d:clip(r&&r.d,10),st:n(r&&r.st,0,3)})),
+    likes:(Array.isArray(d.likes)?d.likes:[]).slice(-12).map(l=>({t:clip(l&&l.t,120),tp:clip(l&&l.tp,20)})),top:(Array.isArray(d.top)?d.top:[]).slice(0,4).map(x=>clip(x,20)),ts:n(d.ts,0,9e15)};}
+function cleanRec(d){if(!d||(d.from!=="j"&&d.from!=="her"))return null;return {from:d.from,to:d.to,url:/^https?:\/\//.test(d.url||"")?clip(d.url,600):"",nid:clip(d.nid,80),title:clip(d.title,200),note:clip(d.note,120),ts:+d.ts||0,read:!!d.read,react:REACTS[d.react]?d.react:""};}
+function myProfile(){
+  const t=today(),wk0=addDays(t,-6),topics={};
+  S.log.forEach(l=>{if(l.topic&&l.topic!=="自選")topics[l.topic]=(topics[l.topic]||0)+1;});
+  return {v:1,xp:S.xp||0,stk:streak(),td:S.log.filter(l=>l.date===t).length,wk:S.log.filter(l=>l.date>=wk0).length,n:S.log.length,stamps:S.stamps.length,
+    countries:new Set(S.stamps.filter(s=>s.country).map(s=>s.country)).size,words:S.jar.length,
+    recent:S.log.slice(-6).reverse().map(l=>({t:clip(l.title,120),z:clip(l.zh,40),tp:clip(l.topic,20),d:l.date,st:l.stars||0})),
+    likes:(S.likes||[]).slice(-12),top:Object.entries(topics).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]),
+    sv:JSON.stringify(S),svt:S.svt||Date.now(),ts:Date.now()};
+}
+function scheduleSync(){if(!SY.on)return;clearTimeout(SY.timer);SY.timer=setTimeout(pushMine,2000);}
+async function pushMine(){if(!SY.on)return;clearTimeout(SY.timer);const p=myProfile(),k=p.sv+p.td+p.stk;if(k===SY.last)return;
+  try{await SY.db.doc(`pairs/${PAIR}/desk/${ME}`).set(p);SY.last=k;}catch(e){console.warn("desk sync",e);}}
+async function restoreCloud(){
+  try{const s=await SY.db.doc(`pairs/${PAIR}/desk/${ME}`).get({source:"server"});if(!s.exists)return;const d=s.data();if(!d||typeof d.sv!=="string")return;
+    const c=JSON.parse(d.sv);if(!c||!Array.isArray(c.log))return;
+    if((S.log.length===0&&c.log.length>0)||((+c.svt||0)>(S.svt||0)&&c.log.length>=S.log.length)){S=Object.assign(fresh(),c);saveLocal();if(S.log.length)toast("已從雲端找回進度");render();}
+  }catch(e){console.warn("restore",e);}
+}
+async function initSync(){
+  if(!window.firebase||!window.__FB_CONFIG)return;
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(window.__FB_CONFIG);
+    await firebase.auth().signInAnonymously();SY.db=firebase.firestore();
+    // check that the desk paths are allowed before turning the shared features on
+    await SY.db.doc(`pairs/${PAIR}/desk/${PT}`).get();
+    await restoreCloud();SY.on=true;render();
+    SY.db.doc(`pairs/${PAIR}/desk/${PT}`).onSnapshot(s=>{SY.partner=s.exists?cleanProfile(s.data()):null;softRender();},e=>console.warn("partner",e));
+    const col=SY.db.collection(`pairs/${PAIR}/recs`);
+    col.where("to","==",ME).onSnapshot(q=>{SY.inbox=q.docs.map(x=>{const r=cleanRec(x.data());return r&&{id:x.id,...r};}).filter(Boolean).sort((a,b)=>b.ts-a.ts).slice(0,30);softRender();},e=>console.warn("inbox",e));
+    col.where("from","==",ME).onSnapshot(q=>{SY.sent=q.docs.map(x=>{const r=cleanRec(x.data());return r&&{id:x.id,...r};}).filter(Boolean).sort((a,b)=>b.ts-a.ts).slice(0,20);softRender();},e=>console.warn("sent",e));
+    pushMine();
+  }catch(e){console.warn("sync init",e);SY.on=false;}
+}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)pushMine();});
+function partnerRead(n){const P=SY.partner;return !!(P&&P.recent.some(r=>r.t===n.title));}
+function pron(){return ME==="j"?"她":"他";}
+function you(){return ME==="j"?"你":"妳";}
+function boardHTML(){
+  if(!SY.on)return "";
+  const P=SY.partner,who=NM[PT];
+  if(!P)return `<div class="card board" style="margin-top:12px"><div class="small muted">同事・${who}</div><div>${who}還沒進編輯台。等${pron()}開始，這裡就會看到${pron()}的進度。</div></div>`;
+  const rk=rankOf(P.xp),isToday=new Date(P.ts).toLocaleDateString("sv")===today();
+  const tastes=[...new Set(P.likes.map(l=>l.tp).concat(P.top).filter(Boolean))].slice(0,5);
+  let h=`<div class="card board" style="margin-top:12px"><div class="row" style="justify-content:space-between"><div><div class="small muted">同事</div><div style="font-weight:700;font-size:17px">${who}・${rk.name}</div></div><div class="small muted" style="font-family:var(--f-mono);text-align:right">${P.xp} XP<br>連續 ${P.stk} 天</div></div>
+  <div class="mini-stats"><span>今天 <b>${isToday?P.td:0}</b> 篇</span><span>本週 <b>${P.wk}</b> 篇</span><span>護照 <b>${P.stamps}</b> 章</span><span>單字 <b>${P.words}</b></span></div>`;
+  if(P.recent.length)h+=`<div class="small" style="margin-top:8px"><span class="muted">最近在讀：</span>${P.recent.slice(0,2).map(r=>esc(r.z||r.t)).join("、")}</div>`;
+  if(tastes.length)h+=`<div class="row" style="margin-top:8px;gap:6px"><span class="small muted">${pron()}的口味：</span>${tastes.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>`;
+  if((S.xp||0)<P.xp)h+=`<div class="small muted" style="margin-top:6px">再 ${P.xp-(S.xp||0)} XP 就追上${who}了</div>`;
+  return h+`</div>`;
+}
+function inboxHTML(){
+  if(!SY.on)return "";const unread=SY.inbox.filter(r=>!r.read);if(!unread.length)return "";
+  return `<div class="sec-head"><h2>${NM[PT]}推薦給${you()}</h2><span class="small muted">${unread.length} 則</span></div><div class="cards">${unread.map(r=>{const n=r.nid?findP(r.nid):null;
+    return `<div class="card rec-card"><div class="small muted">${new Date(r.ts).toLocaleDateString("zh-TW",{month:"numeric",day:"numeric"})}・${n?(n.desk?"編輯台稿件":"外電"):esc(hostOf(r.url))}</div>
+    <div class="hl2">${esc(n?(n.desk&&!S.done[n.id]?n.zh:n.title):r.title)}</div>${r.note?`<div class="note2">「${esc(r.note)}」</div>`:""}
+    <div class="row" style="margin-top:8px"><button class="btn" style="padding:7px 12px" data-act="recGo" data-id="${r.id}">打開</button></div>
+    <div class="row" style="margin-top:6px;gap:6px"><span class="small muted">回應：</span>${Object.entries(REACTS).map(([k,l])=>`<button class="react" data-act="recReact" data-id="${r.id}" data-r="${k}">${l}</button>`).join("")}</div></div>`;}).join("")}</div>`;
+}
+function sentHTML(){
+  if(!SY.on||!SY.sent.length)return "";
+  return `<h2>${you()}推薦給${NM[PT]}的</h2><div class="jar-list">${SY.sent.slice(0,10).map(r=>{const n=r.nid?findP(r.nid):null;
+    return `<div class="jw"><span class="wd" style="font-weight:400">${esc(n?(n.zh||n.title):r.title)}</span><span class="small ${r.react?"":"muted"}">${r.react?REACTS[r.react]:r.read?"已看":"還沒看"}</span></div>`;}).join("")}</div>
+    <p class="small muted">${NM[PT]}的回應，可以看出${pron()}喜歡哪種新聞。</p>`;
+}
+function toggleLike(p){S.likes=S.likes||[];const i=S.likes.findIndex(l=>l.t===p.title);if(i>=0)S.likes.splice(i,1);else S.likes.push({t:clip(p.title,120),tp:clip(p.topic,20)});save();render();}
+function openRecSheet(o){
+  const n=o.nid?findP(o.nid):null,title=n?(n.desk?n.zh:n.title):o.title;V.rec=o;
+  $("#layer").innerHTML=`<div class="scrim" data-act="closeSheet"><div class="sheet" role="dialog" aria-label="推薦" data-stop="1">
+  <div class="row" style="justify-content:space-between"><b>推薦給${NM[PT]}</b><button class="xbtn" data-act="closeSheet" aria-label="關閉">✕</button></div>
+  <div style="font-family:var(--f-head);font-weight:600;font-size:18px;margin:6px 0 10px">${esc(title)}</div>
+  <label class="small muted" for="recNote">附一句話（可空白，最多 60 字）</label><input type="text" id="recNote" maxlength="60" placeholder="例如：這篇的抓錯很難" style="margin:6px 0 12px">
+  <button class="btn wide" data-act="recSend">送出</button></div></div>`;
+}
+async function sendRec(){
+  const o=V.rec||{},n=o.nid?findP(o.nid):null,note=clip(($("#recNote")||{}).value||"",60).trim();
+  const doc={from:ME,to:PT,url:n?(n.url||""):o.url||"",nid:n?n.id:"",title:clip(n?(n.desk?n.zh:n.title):o.title,200),note,ts:Date.now(),read:false,react:""};
+  try{await SY.db.collection(`pairs/${PAIR}/recs`).add(doc);closeSheet();toast(`已推薦給${NM[PT]}`);}catch(e){toast("沒送出去，等一下再試");console.warn(e);}
+}
+function openRecItem(id){const r=SY.inbox.find(x=>x.id===id);if(!r)return;const n=r.nid?findP(r.nid):null;
+  SY.db.doc(`pairs/${PAIR}/recs/${id}`).update({read:true}).catch(()=>{});
+  if(n){n.desk?openDesk(n):openNews(n);}else if(r.url){window.open(r.url,"_blank","noopener");}}
+function reactRec(id,r){SY.db.doc(`pairs/${PAIR}/recs/${id}`).update({read:true,react:r}).then(()=>toast("已回應")).catch(()=>toast("等一下再試"));}
+render();
+initSync();
+
+</script>
+</body>
+</html>
