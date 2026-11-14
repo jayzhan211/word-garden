@@ -401,6 +401,17 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 <div id="toast"></div>
 <div id="modalRoot"></div>
 <script>
+// ===== 第一次打開：問是誰（之後這台裝置會記住）=====
+(function(){
+ try{if(!window.__FB_CONFIG||location.hash==='#j'||localStorage.getItem('lb_role'))return}catch(e){return}
+ window.__pickRole=r=>{try{localStorage.setItem('lb_role',r)}catch(e){}location.replace(location.pathname)};
+ document.body.innerHTML=`<div style="min-height:100vh;display:grid;place-items:center;padding:20px"><div style="background:#fff;border:3px solid #ffd3e4;border-radius:28px;padding:24px 20px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 24px #f5c6d955">
+ <div style="font-size:56px">🌷</div><div class="banner" style="margin-top:4px">歡迎來到單字花園</div>
+ <div class="sub" style="margin:6px 0 16px">你是哪一位？<br><span class="small">選一次就好，這台裝置會記住</span></div>
+ <button class="btn gold" style="font-size:20px" onclick="__pickRole('her')">我是 彣</button>
+ <button class="btn" style="font-size:20px" onclick="__pickRole('j')">我是 傑</button></div></div>`;
+ throw new Error('waiting for role pick');
+})();
 // ===== WORD BANK: [word, pos, 中文, English definition, synonyms (first fits the sentence), example, 字根/陷阱] =====
 const RAW=[
 ["abate","v","減弱；減輕","to become less intense or widespread",["subside","wane","ebb"],"The storm did not ___ until dawn, leaving the coast battered.","ad + battre 打 → 打下去、減下來"],
