@@ -2370,7 +2370,7 @@ den=function(){
  const t=document.querySelector('.top b.cute');if(t&&pet().gname){t.innerHTML=`🌸 ${esc(myLabel())}`;t.insertAdjacentHTML('afterend','<button class="small" data-a="rename" style="margin-right:auto;margin-left:4px">✏️</button>')}
  if(SYNC.on){const top=document.querySelector('.top');if(top)top.insertAdjacentHTML('afterend',vtogHTML()+raceHTML())}
 };
-{const _ob=onboard;onboard=function(){if(pet().gname)return;_ob()}}
+{const _ob=onboard;onboard=function(){if(pet().gname)return;_ob();const b=document.querySelector('#modalRoot .banner');if(b)b.setAttribute('data-a','ttap')}}
 function vtog(v){VIEWP=v==='p';$('#modalRoot').innerHTML='';modalDone=null;den()}
 function duelModal(){openModal(`<div class="banner" style="margin-top:0">🏆 ${NM[myId()]} vs ${NM[partnerIdOf()]}</div>${duelHTML()}<div class="small" style="text-align:center">每答一題都算，會即時更新</div><button class="btn gold" data-a="vtog" data-v="p">👀 去看${NM[partnerIdOf()]}的花園</button><button class="btn ghost" data-a="closeModal">關閉</button>`)}
 
