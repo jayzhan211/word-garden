@@ -2239,7 +2239,7 @@ function myProfile(){
 function scheduleSync(){if(!SYNC.on)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(pushMine,2500)}
 async function pushMine(){
  if(!SYNC.on||SYNC.needLogin)return;clearTimeout(SYNC.timer);if(SYNC.myCloud)adoptCloud(SYNC.myCloud);const prof=myProfile(),sv=JSON.stringify(save),key=JSON.stringify(prof)+sv;if(key===SYNC.lastSent)return;
- try{await SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).set({...prof,sv,svt:save.svt||Date.now(),ts:Date.now()});SYNC.lastSent=key;SYNC.cloudOk=Date.now()}catch(e){console.warn('sync',e)}
+ try{await SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).set({...prof,sv,svt:save.svt||Date.now(),ts:Date.now()});SYNC.lastSent=key;SYNC.cloudOk=Date.now();snapMaybe(sv,prof)}catch(e){console.warn('sync',e)}
 }
 // ===== 雲端合併：兩邊的進度一個字一個字合併，只會多不會少 =====
 const cntSeen=x=>Object.values((x&&x.m)||{}).filter(m=>m&&m.seen).length;
@@ -2262,7 +2262,7 @@ function adoptCloud(d){
  if(!d||typeof d.sv!=='string')return false;let C;try{C=JSON.parse(d.sv)}catch(e){return false}
  const before=JSON.stringify(save),lS=cntSeen(save);
  const M=mergeSaves(save,C);if(JSON.stringify(M)===before)return false;
- save=M;_persist();
+ localBak();save=M;_persist();
  if(!R){const open=$('#modalRoot').innerHTML;if(!open||lS===0){$('#modalRoot').innerHTML='';modalDone=null;den()}}
  if(lS===0&&cntSeen(save)>0)toast('☁️ 已從雲端找回你的花園');
  return true;
@@ -2290,6 +2290,7 @@ async function initSync(){
   if(isJUser(u)&&ROLE!=='j'){try{localStorage.setItem('lb_role','j')}catch(e){}location.reload();return}
   SYNC.needLogin=ROLE==='j'&&!isJUser(u);
   SYNC.db=firebase.firestore();
+  try{await SYNC.db.enablePersistence({synchronizeTabs:true})}catch(e){console.warn('persist',e&&e.code)}
   await restoreFromCloud();SYNC.on=true;
   SYNC.db.doc(`pairs/${PAIR}/players/${myId()}`).onSnapshot(s=>{if(s.metadata&&s.metadata.hasPendingWrites)return;SYNC.myCloud=s.exists?s.data():null;if(SYNC.myCloud&&!R)adoptCloud(SYNC.myCloud)},e=>console.warn('self',e));
   SYNC.db.doc(`pairs/${PAIR}/players/${partnerIdOf()}`).onSnapshot(s=>onPartner(s.exists?s.data():null),e=>console.warn('sync',e));
@@ -2536,8 +2537,41 @@ function accountMenu(){
 {const _tt=titleTap;titleTap=function(){if(!SYNC.on&&!window.__FB_CONFIG)return _tt();const t=Date.now();tapN=t-tapT<700?tapN+1:1;tapT=t;if(tapN>=5){tapN=0;accountMenu()}}}
 {const _d5=den;den=function(){_d5();if(SYNC.needLogin&&!VIEWP){const top=document.querySelector('.top');if(top)top.insertAdjacentHTML('afterend',`<div class="pwa" data-a="glogin" style="background:#fff3e6;border-color:#ffd59e"><span>🔑</span><b>這台裝置還沒登入，傑的進度不會存到雲端。點這裡用 Google 登入</b></div>`)}}}
 
+// ===== 🛟 進度保護：本機備份 + 雲端快照（只能新增，不能改、不能刪）=====
+function localBak(){try{const k=KEY+'_bak',a=JSON.parse(localStorage.getItem(k)||'[]');a.unshift({t:Date.now(),sv:JSON.stringify(save)});localStorage.setItem(k,JSON.stringify(a.slice(0,5)))}catch(e){}}
+const SNAP_GAP=20*60e3;
+function snapMaybe(sv,prof){
+ try{
+  const k='wg_snap_'+myId(),last=+localStorage.getItem(k)||0,seen=prof.seen||0;
+  if(!seen)return;
+  if(Date.now()-last<SNAP_GAP)return;
+  localStorage.setItem(k,Date.now());
+  SYNC.db.collection(`pairs/${PAIR}/hist/${myId()}/snaps`).add({ts:Date.now(),seen,gname:prof.gname||'',sv}).catch(e=>{console.warn('snap',e);localStorage.removeItem(k)});
+ }catch(e){console.warn('snap',e)}
+}
+async function timeMachine(){
+ if(!SYNC.on)return toast('連上網路才能看雲端紀錄');
+ openModal(`<div class="banner" style="margin-top:0">🛟 雲端紀錄</div><div class="sub" style="text-align:center">讀取中⋯</div>`);
+ let list=[];
+ try{const q=await SYNC.db.collection(`pairs/${PAIR}/hist/${myId()}/snaps`).orderBy('ts','desc').limit(30).get();q.forEach(d=>list.push({id:d.id,...d.data()}))}catch(e){return openModal(`<div class="banner" style="margin-top:0">🛟 雲端紀錄</div><div class="sub">讀取失敗：${esc(e.code||e.message)}</div><button class="btn ghost" data-a="closeModal">關閉</button>`)}
+ try{for(const b of JSON.parse(localStorage.getItem(KEY+'_bak')||'[]')){const n=cntSeen(JSON.parse(b.sv));if(n)list.push({id:'local'+b.t,ts:b.t,local:1,sv:b.sv,seen:n})}}catch(e){}
+ list.sort((a,b)=>b.ts-a.ts);SYNC.tm=list;
+ const f=t=>new Date(t).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+ openModal(`<div class="banner" style="margin-top:0">🛟 雲端紀錄</div>
+ <div class="small">點一筆紀錄，會把那時候的進度<b>合併</b>回來：只補回少掉的字，不會蓋掉現在的進度。目前：${seenCount()} 個字</div>
+ ${list.length?`<div style="max-height:46vh;overflow:auto;margin:6px 0">${list.map((x,i)=>`<div class="wrow" data-a="tmpick" data-v="${i}"><span>${f(x.ts)}${x.local?' <span class="small">（這台裝置）</span>':''}</span><span class="small">${x.seen} 個字${x.gname?' · '+esc(x.gname):''}</span></div>`).join('')}</div>`:`<div class="sub" style="text-align:center;margin:12px 0">還沒有紀錄<br><span class="small">玩過之後每 20 分鐘最多存一份</span></div>`}
+ <button class="btn ghost" data-a="closeModal">關閉</button>`);
+}
+function tmPick(i){
+ const x=SYNC.tm&&SYNC.tm[+i];if(!x)return;let C;try{C=JSON.parse(x.sv)}catch(e){return toast('這筆紀錄讀不出來')}
+ const before=seenCount();localBak();save=mergeSaves(save,C);_persist();SYNC.lastSent='';pushMine();
+ $('#modalRoot').innerHTML='';modalDone=null;den();toast(`🛟 合併完成：${before} → ${seenCount()} 個字`);
+}
+{const _am=accountMenu;accountMenu=function(){_am();const g=document.querySelector('#modalRoot .btn.ghost[data-a=closeModal]');if(g)g.insertAdjacentHTML('beforebegin',`<button class="btn" data-a="tm">🛟 從雲端紀錄找回進度</button>`)}}
+
 // ===== EVENTS =====
 const ACT={
+ tm:timeMachine,tmpick:tmPick,
  glogin:googleLogin,glogout:googleLogout,
  pwa:pwaGuide,pwax:pwaX,pwadone:()=>{save.pwaHint=1;persist();closeModal()},gift:giftOpen,gpick:giftPick,gword:giftWord,gsend:giftSend,giftback:()=>{$('#modalRoot').innerHTML='';modalDone=null;giftOpen()},vase:vaseOpen,wbook:wrongBook,wplay:wrongPlay,autosay:autoSayToggle,
  favpick:favPick,favset:favSet,

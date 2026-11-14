@@ -17,5 +17,15 @@ service cloud.firestore {
                    && request.auth != null
                    && request.resource.data.keys().size() < 30;
     }
+
+    // 進度快照：只能新增，不能修改、不能刪除
+    match /pairs/{pair}/hist/{role}/snaps/{snap} {
+      allow read: if request.auth != null && pair == 'HDzAwqJ7yVFqTTgJX3o1LMU3';
+      allow create: if pair == 'HDzAwqJ7yVFqTTgJX3o1LMU3'
+                    && request.auth != null
+                    && (role == 'her'
+                        || (role == 'j' && request.auth.uid == 'qifNMG7nHfPqPoDWkmcJBaygklk1'))
+                    && request.resource.data.keys().size() < 10;
+    }
   }
 }
