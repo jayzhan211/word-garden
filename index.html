@@ -576,7 +576,13 @@ const SFX={
  die:()=>[392,330,262,196].forEach((f,i)=>setTimeout(()=>tone(f,.35,'triangle',.07),i*160))
 };
 function vib(n){try{navigator.vibrate&&navigator.vibrate(n)}catch(e){}}
-function say(w){try{const u=new SpeechSynthesisUtterance(w);u.lang='en-US';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+// 🔊 發音：選一個英文語音；iOS 要先在使用者點擊時「解鎖」一次
+let VOICE=null;
+function pickVoice(){try{const vs=speechSynthesis.getVoices().filter(v=>/^en[-_]/i.test(v.lang));const pref=['Samantha','Google US English','Microsoft Aria','Microsoft Jenny','Karen','Daniel'];VOICE=vs.find(v=>pref.some(p=>v.name.includes(p)))||vs.find(v=>/en[-_]US/i.test(v.lang))||vs[0]||null}catch(e){}}
+try{pickVoice();speechSynthesis.addEventListener&&speechSynthesis.addEventListener('voiceschanged',pickVoice)}catch(e){}
+let SAY_UNLOCK=false;
+addEventListener('pointerdown',()=>{if(SAY_UNLOCK||!window.speechSynthesis)return;SAY_UNLOCK=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}},{capture:true});
+function say(w,delay){try{if(!window.speechSynthesis)return;const go=()=>{const u=new SpeechSynthesisUtterance(w);u.lang='en-US';if(VOICE)u.voice=VOICE;u.rate=.9;u.volume=1;speechSynthesis.speak(u);try{speechSynthesis.resume()}catch(e){}};if(speechSynthesis.speaking||speechSynthesis.pending){speechSynthesis.cancel();setTimeout(go,delay||80)}else if(delay)setTimeout(go,delay);else go()}catch(e){}}
 let toastT;
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1800)}
 function shake(){app.classList.remove('shake');void app.offsetWidth;app.classList.add('shake');const f=$('#flash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),60)}
@@ -1367,7 +1373,7 @@ function rchoose(i){
  R.locked=true;const ok=R.sel.every(j=>q.opts[j].ok);
  R.tot++;save.total++;if(ok)save.correct++;master(q.w,ok);adapt(ok);revealAnswer(q,R.sel);
  const p=pet(),e=$('#pet');
- if(ok){R.ok++;if(save.autoSay!==0)say(q.w.w);gainCard(q.w);petXP(2,q.w);R.xp+=2;save.ink+=2;R.ink+=2;p.hunger=Math.min(100,p.hunger+5);SFX.hit();if(e)e.innerHTML=flowerBig(q.w);$('#pbubble').textContent=pick(['澆水！長大了 🌱','答對了 💖','又開了一點～','好聰明！']);floatAt('.feedtop','+2','heal');persist();setTimeout(nextStep,q.type==='tc'||q.type==='se'?800:520)}
+ if(ok){R.ok++;if(save.autoSay!==0)say(q.w.w,350);gainCard(q.w);petXP(2,q.w);R.xp+=2;save.ink+=2;R.ink+=2;p.hunger=Math.min(100,p.hunger+5);SFX.hit();if(e)e.innerHTML=flowerBig(q.w);$('#pbubble').textContent=pick(['澆水！長大了 🌱','答對了 💖','又開了一點～','好聰明！']);floatAt('.feedtop','+2','heal');persist();setTimeout(nextStep,q.type==='tc'||q.type==='se'?800:520)}
  else{if(!R.wrong.includes(q.w.w))R.wrong.push(q.w.w);if(e)e.innerHTML=flowerBig(q.w);$('#pbubble').textContent='花有點枯了，記住它就能救回來 💧';
   // 答錯的字在這回合稍後再考一次
   if(!R.steps.slice(R.i).some(s=>s.w===q.w)&&R.steps.length<R.len*2)R.steps.splice(Math.min(R.steps.length,R.i+3),0,{k:'q',w:q.w,retry:1});
@@ -2494,7 +2500,7 @@ function wrongBook(){
 function wrongPlay(){const l=wrongList().slice(0,10);if(!l.length)return;$('#modalRoot').innerHTML='';modalDone=null;startRound('wrong',l)}
 
 // ===== 🔊 自動發音開關（放在花園設定裡）=====
-{const _rn2=rename;rename=function(){_rn2();const g=document.querySelector('#modalRoot .btn.ghost[data-a=favpick]')||document.querySelector('#modalRoot .btn.gold');if(g)g.insertAdjacentHTML('afterend',`<button class="btn ghost" data-a="autosay">🔊 答對後自動唸單字：${save.autoSay===0?'關':'開'}</button>`)}}
+{const _rn2=rename;rename=function(){_rn2();const g=document.querySelector('#modalRoot .btn.ghost[data-a=favpick]')||document.querySelector('#modalRoot .btn.gold');if(g)g.insertAdjacentHTML('afterend',`<button class="btn ghost" data-a="autosay">🔊 答對後自動唸單字：${save.autoSay===0?'關':'開'}</button><button class="btn ghost" data-a="saytest">🔈 試聽發音（serendipity）</button>`)}}
 function autoSayToggle(){save.autoSay=save.autoSay===0?1:0;persist();rename()}
 
 // ===== 花園主畫面加上新按鈕 =====
@@ -2571,6 +2577,7 @@ function tmPick(i){
 
 // ===== EVENTS =====
 const ACT={
+ saytest:()=>{say('serendipity');toast(window.speechSynthesis?'🔈 有聽到嗎？聽不到請檢查靜音開關和音量':'這個瀏覽器不支援發音')},
  tm:timeMachine,tmpick:tmPick,
  glogin:googleLogin,glogout:googleLogout,
  pwa:pwaGuide,pwax:pwaX,pwadone:()=>{save.pwaHint=1;persist();closeModal()},gift:giftOpen,gpick:giftPick,gword:giftWord,gsend:giftSend,giftback:()=>{$('#modalRoot').innerHTML='';modalDone=null;giftOpen()},vase:vaseOpen,wbook:wrongBook,wplay:wrongPlay,autosay:autoSayToggle,
