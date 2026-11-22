@@ -565,7 +565,7 @@ function master(w,ok){const m=save.m[w.w]||(save.m[w.w]={s:0,n:0,c:0});m.seen=1;
 
 // ===== AUDIO / FX =====
 let AC=null;
-function tone(f,d=.1,type='sine',v=.08,slide=0){if(save.mute)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(f*slide,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}}
+function tone(f,d=.1,type='sine',v=.08,slide=0){if(save.mute||save.sfxOff)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(f*slide,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}}
 const SFX={
  hit:()=>{tone(660,.09,'triangle',.07,1.5);setTimeout(()=>tone(990,.12,'sine',.05),60)},
  crit:()=>[784,988,1319,1568].forEach((f,i)=>setTimeout(()=>tone(f,.14,'triangle',.06),i*55)),
@@ -785,7 +785,7 @@ function walkLearn(){
  <div class="feedtop"><div class="pet small2">${petNow('happy')}</div><div class="pbubble" style="position:static;white-space:normal">${pick(['在草叢裡撿到一顆單字蛋！','汪！這個字閃閃發亮','你看你看，新的字！'])}</div></div>
  <div class="card" style="animation:pop .3s">${cardHTML(w)}</div>
  <button class="btn gold" data-a="walkNext">${walkS.i+1<walkS.list.length?'記住了，下一個 →':'都記住了，來小考！'}</button>`;
- say(w.w);
+ sayA(w.w);
 }
 function walkNext(){walkS.i++;if(walkS.i<walkS.list.length)return walkLearn();walkS.q=shuffle(walkS.list);walkS.qi=0;walkQuiz()}
 function walkQuiz(){
@@ -1269,7 +1269,7 @@ function closeModal(){$('#modalRoot').innerHTML='';const d=modalDone;modalDone=n
 function learnCard(w,done,wrong){
  modalDone=done||null;
  openModal(`${wrong?'<div class="small" style="color:var(--red);margin-bottom:8px">✗ 答錯了，這個字成為你的宿敵，等一下還會再出現</div>':''}${cardHTML(w)}<button class="btn gold" data-a="closeModal" style="margin-top:14px">記住了</button>`);
- if(wrong)say(w.w);
+ if(wrong)sayA(w.w);
 }
 
 // ===== END / META =====
@@ -1358,7 +1358,7 @@ function nextStep(){
   R.learned.push(st.w.w);save.rl=[st.w.w,...(save.rl||[]).filter(x=>x!==st.w.w)].slice(0,12);
   app.innerHTML=roundTop()+`<div class="feedtop"><div class="pet small2">${petNow('happy')}</div><div class="pbubble" style="position:static">${pick(['種下一顆新種子 🌱','新的花種！先記一下～','這顆種子會開什麼花呢？'])}</div></div>
   <div class="card" style="animation:pop .3s">${cardHTML(st.w)}</div><button class="btn gold" data-a="rnext">記住了 →</button>`;
-  say(st.w.w);return;
+  sayA(st.w.w);return;
  }
  const w=st.w,type=pickType(w,R.mode);const q=makeQ(w,type,optCount());R.cur=q;R.sel=[];R.locked=false;
  const diary=R.mode==='diary';
@@ -1373,7 +1373,7 @@ function rchoose(i){
  R.locked=true;const ok=R.sel.every(j=>q.opts[j].ok);
  R.tot++;save.total++;if(ok)save.correct++;master(q.w,ok);adapt(ok);revealAnswer(q,R.sel);
  const p=pet(),e=$('#pet');
- if(ok){R.ok++;if(save.autoSay!==0)say(q.w.w,350);gainCard(q.w);petXP(2,q.w);R.xp+=2;save.ink+=2;R.ink+=2;p.hunger=Math.min(100,p.hunger+5);SFX.hit();if(e)e.innerHTML=flowerBig(q.w);$('#pbubble').textContent=pick(['澆水！長大了 🌱','答對了 💖','又開了一點～','好聰明！']);floatAt('.feedtop','+2','heal');persist();setTimeout(nextStep,q.type==='tc'||q.type==='se'?800:520)}
+ if(ok){R.ok++;if(save.autoSay!==0)sayA(q.w.w,350);gainCard(q.w);petXP(2,q.w);R.xp+=2;save.ink+=2;R.ink+=2;p.hunger=Math.min(100,p.hunger+5);SFX.hit();if(e)e.innerHTML=flowerBig(q.w);$('#pbubble').textContent=pick(['澆水！長大了 🌱','答對了 💖','又開了一點～','好聰明！']);floatAt('.feedtop','+2','heal');persist();setTimeout(nextStep,q.type==='tc'||q.type==='se'?800:520)}
  else{if(!R.wrong.includes(q.w.w))R.wrong.push(q.w.w);if(e)e.innerHTML=flowerBig(q.w);$('#pbubble').textContent='花有點枯了，記住它就能救回來 💧';
   // 答錯的字在這回合稍後再考一次
   if(!R.steps.slice(R.i).some(s=>s.w===q.w)&&R.steps.length<R.len*2)R.steps.splice(Math.min(R.steps.length,R.i+3),0,{k:'q',w:q.w,retry:1});
@@ -1422,7 +1422,7 @@ function den(){
  <div class="grid3">
   <button data-a="dress">🎀<span>裝扮</span></button><button data-a="decor">🏠<span>佈置</span></button><button data-a="cards">🃏<span>卡冊 ${GROUPS.filter(g=>gb(g.id)).length}/${GROUPS.length}</span></button>
   <button data-a="codex">📖<span>詞典</span></button><button data-a="stats">📊<span>紀錄</span></button><button data-a="help">❓<span>玩法</span></button>
-  <button data-a="photo">📸<span>拍照</span></button><button data-a="themes">🎨<span>主題</span></button><button data-a="mute">${save.mute?'🔇':'🔊'}<span>音效${save.mute?'關':'開'}</span></button>
+  <button data-a="photo">📸<span>拍照</span></button><button data-a="themes">🎨<span>主題</span></button><button data-a="mute">${sndIcon()}<span>聲音</span></button>
  </div>`;
  if(!pet().coat){setTimeout(onboard,200);return}
  if(!save.help3){save.help3=1;save.help2=1;save.help=1;persist();showHelp();modalDone=()=>{den()}}
@@ -1962,7 +1962,7 @@ function den(){
  <div class="grid3">
   <button data-a="decor">🏡<span>佈置</span></button><button data-a="cards">🃏<span>卡冊 ${GROUPS.filter(g=>gb(g.id)).length}/${GROUPS.length}</span></button><button data-a="codex">📖<span>詞典</span></button>
   <button data-a="stats">📊<span>紀錄</span></button><button data-a="fbook">🌼<span>花圖鑑</span></button><button data-a="photo">📸<span>拍照</span></button><button data-a="help">❓<span>玩法</span></button>
-  <button data-a="themes">🎨<span>主題</span></button><button data-a="mute">${save.mute?'🔇':'🔊'}<span>音效${save.mute?'關':'開'}</span></button>${inkInf()?'<button data-a="dvpanel" style="border-color:#ffd27a;background:#fff8e1">🧪<span>測試</span></button>':''}
+  <button data-a="themes">🎨<span>主題</span></button><button data-a="mute">${sndIcon()}<span>聲音</span></button>${inkInf()?'<button data-a="dvpanel" style="border-color:#ffd27a;background:#fff8e1">🧪<span>測試</span></button>':''}
  </div>`;
  if(!p.gname){setTimeout(onboard,200);return}
  if(!save.help4){save.help4=1;save.help3=1;persist();showHelp();modalDone=()=>{den()};return}
@@ -2502,6 +2502,34 @@ function wrongPlay(){const l=wrongList().slice(0,10);if(!l.length)return;$('#mod
 // ===== 🔊 自動發音開關（放在花園設定裡）=====
 {const _rn2=rename;rename=function(){_rn2();const g=document.querySelector('#modalRoot .btn.ghost[data-a=favpick]')||document.querySelector('#modalRoot .btn.gold');if(g)g.insertAdjacentHTML('afterend',`<button class="btn ghost" data-a="autosay">🔊 答對後自動唸單字：${save.autoSay===0?'關':'開'}</button><button class="btn ghost" data-a="saytest">🔈 試聽發音（serendipity）</button>`)}}
 function autoSayToggle(){save.autoSay=save.autoSay===0?1:0;persist();rename()}
+// ===== 🔊 聲音設定：全部靜音／音效／自動發音／邊聽音樂邊玩 =====
+// 網頁無法偵測其他 App（Spotify、YouTube）是否正在播音樂，
+// 所以提供「邊聽音樂邊玩」模式：iOS 上把音效設成 ambient（與音樂混音、不打斷、跟隨側邊靜音鍵），並暫停自動發音。
+function applyAudioSession(){try{if(navigator.audioSession)navigator.audioSession.type=save.musicMode?'ambient':'auto'}catch(e){}}
+applyAudioSession();
+function sndIcon(){return save.mute?'🔇':save.musicMode?'🎧':'🔊'}
+function sayA(w,d){if(save.mute||save.musicMode)return;say(w,d)}
+function soundPanel(){
+ const on=v=>v?'<b>開</b>':'<span style="opacity:.6">關</span>';
+ modalDone=den;
+ openModal(`<div class="banner" style="margin-top:0">${sndIcon()} 聲音設定</div>
+ <button class="btn ${save.mute?'gold':'ghost'}" data-a="snd" data-v="mute">🔇 全部靜音：${on(save.mute)}</button>
+ <div class="small" style="margin:4px 0 10px;opacity:.75">開啟後不會自動發出任何聲音；點單字旁的 🔊 仍可聽發音</div>
+ <button class="btn ghost" data-a="snd" data-v="sfx" ${save.mute?'disabled style="opacity:.45"':''}>🎵 音效：${on(!save.sfxOff)}</button>
+ <button class="btn ghost" data-a="snd" data-v="say" ${save.mute||save.musicMode?'disabled style="opacity:.45"':''}>🗣️ 自動唸單字：${on(save.autoSay!==0&&!save.musicMode)}</button>
+ <button class="btn ${save.musicMode?'gold':'ghost'}" data-a="snd" data-v="music">🎧 邊聽音樂邊玩：${on(save.musicMode)}</button>
+ <div class="small" style="margin:4px 0 10px;opacity:.75">在聽歌時開這個：遊戲音效會小聲混進音樂、不會把音樂暫停（iPhone 上也會跟著側邊靜音鍵），自動發音先暫停</div>
+ <button class="btn ghost" data-a="saytest">🔈 試聽發音（serendipity）</button>
+ <button class="btn" data-a="closeModal" style="margin-top:8px">好了</button>`);
+}
+function sndToggle(v){
+ if(v==='mute')save.mute=save.mute?0:1;
+ else if(v==='sfx')save.sfxOff=save.sfxOff?0:1;
+ else if(v==='say')save.autoSay=save.autoSay===0?1:0;
+ else if(v==='music'){save.musicMode=save.musicMode?0:1;applyAudioSession()}
+ persist();soundPanel();
+ if(v!=='mute'&&!save.mute&&!save.sfxOff)SFX.tick();
+}
 
 // ===== 花園主畫面加上新按鈕 =====
 const _den4=den;
@@ -2585,7 +2613,7 @@ const ACT={
  vtog,duelm:duelModal,
  newrun:newRun,resume:()=>showMap(),menu:title,den,poke,feed:startFeed,fopt:v=>fchoose(+v),dress,hat:setHat,rename,saveName,shop,codex,help:showHelp,cards,group:openGroup,dvwipe:wipeHer,ttap:titleTap,setrole:setRole,fbook:flowerBook,dvpanel:devPanel,dvclose:()=>{$('#modalRoot').innerHTML='';modalDone=null;den();window.scrollTo(0,0)},dvreset:devReset,dvresetok:devResetOk,dvplant:v=>devAct('dvplant',v),dvbloom:v=>devAct('dvbloom',v),dvwilt:v=>devAct('dvwilt',v),dvbond:v=>devAct('dvbond',v),dvdp:v=>devAct('dvdp',v),dvw:v=>devAct('dvw',v),dvhol:v=>devAct('dvhol',v),dvfresh:v=>devAct('dvfresh',v),bed:v=>bedModal(v),obcoat:obPick,obdone:obDone,backup:backupModal,bkmake:bkMake,bkcopy:bkCopy,bkread:bkRead,bkok:bkOk,photo,themes:themePicker,theme:setTheme,xchg,xmake,xcopy,xread,fview,flearn,xsk:v=>{xSticker=v;document.querySelectorAll('[data-a=xsk]').forEach(b=>b.classList.toggle('on',b.dataset.v===v))},round:v=>startRound(v),rnext:nextStep,ropt:v=>rchoose(+v),rlen:v=>{save.rlen=+v;persist();den()},letter:startLetter,lopt:v=>lchoose(+v),decor,furn:toggleFurn,walk:startWalk,walkNext,wopt:v=>wchoose(+v),stats:statsModal,
  liar:()=>{if(!cb||cb.locked||cb.liarUsed)return;cb.liarUsed=true;const c=shuffle(cb.q.opts.map((o,i)=>o.ok?-1:i).filter(i=>i>=0&&!document.querySelectorAll('.opt')[i].classList.contains('gone')))[0];if(c!=null)document.querySelectorAll('.opt')[c].classList.add('gone');document.querySelector('[data-a="liar"]').remove()},
- mute:()=>{save.mute=save.mute?0:1;persist();den()},
+ mute:soundPanel,snd:sndToggle,
  door:v=>enterDoor(+v),opt:v=>choose(+v),mopt:v=>mchoose(+v),take:v=>take(+v),
  quill:useQuill,lens:useLens,say:v=>say(v),
  relic:v=>toast(`${RELICS[v].i} ${RELICS[v].n}：${RELICS[v].d}`),
