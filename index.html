@@ -426,6 +426,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 .tugbub.r{right:8px}.tugbub.l{left:8px;color:#4f9f72;border-color:#c9efd9}
 @keyframes tugbub{0%{opacity:0;transform:translateY(6px) scale(.8)}10%,75%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
 .emos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.emos .btn{font-size:12px;padding:8px 2px;margin:0 0 8px}
+.cloudst{display:block;margin:-2px auto 8px;font-size:11.5px;color:var(--dim);background:none;border:none;padding:2px 8px}.cloudst.bad{color:#c0466c;background:#fff0f3;border:1.5px solid #ffd0dc;border-radius:12px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -437,7 +438,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 <div id="flash"></div>
 <div id="toast"></div>
 <div id="modalRoot"></div>
-<script src="cloze-data.js?v=202611232005"></script>
+<script src="cloze-data.js?v=202611232028"></script>
 <script>
 // ===== WORD BANK: [word, pos, 中文, English definition, synonyms (first fits the sentence), example, 字根/陷阱] =====
 const RAW=[
@@ -2827,12 +2828,33 @@ weekResult=function(){const cw=weekOf(dayNum());if(!SYNC.partner||(save.wkShown|
  <button class="btn gold" data-a="closeModal">這週繼續拉 🪢</button>`);modalDone=den;if(win===me)confetti();return true};
 
 // ===== 自動更新：主畫面 App 回到前景時檢查新版 =====
-const APP_VER='202611232005';
+const APP_VER='202611232028';
 async function checkUpdate(){try{if(R||$('#modalRoot').innerHTML)return;const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==APP_VER&&/^\d+$/.test(v)){if(sessionStorage.getItem('wg_upd')===v)return;sessionStorage.setItem('wg_upd',v);persist();toast('🌱 有新版本，更新中…');setTimeout(()=>location.replace(location.pathname+'?v='+v),600)}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});setTimeout(checkUpdate,1500);
+// ===== ☁️ 備份狀態：看得到最後一次存到雲端的時間 =====
+function cloudState(){const ok=+localStorage.getItem('wg_cloudok')||0,okv=+localStorage.getItem('wg_cloudsvt')||0,pend=(save.svt||0)>okv;
+ if(!SYNC.on)return{ic:'📴',t:navigator.onLine===false?'離線中，回到網路就會補上傳':'雲端還沒連上',bad:1};
+ if(SYNC.needLogin)return{ic:'⚠️',t:'還沒登入，進度沒有存到雲端',bad:1};
+ if(SYNC.cloudErr&&pend)return{ic:'⚠️',t:'上次備份失敗，會再試',bad:1};
+ if(pend)return{ic:'⏳',t:'有新進度，備份中…'};
+ return{ic:'☁️',t:ok?`已備份 · ${ago(ok)}`:'已備份'}}
+function ago(t){const d=(Date.now()-t)/1e3;return d<60?'剛剛':d<3600?`${Math.floor(d/60)} 分鐘前`:d<86400?`${Math.floor(d/3600)} 小時前`:`${Math.floor(d/86400)} 天前`}
+function cloudChip(){const c=cloudState();return`<button class="cloudst ${c.bad?'bad':''}" data-a="cloudnow">${c.ic} ${c.t}</button>`}
+function cloudRefresh(){const e=document.querySelector('.cloudst');if(e)e.outerHTML=cloudChip()}
+{const _pm=pushMine;pushMine=async function(){const svt=save.svt||0,before=SYNC.cloudOk;await _pm();
+ if(SYNC.cloudOk&&SYNC.cloudOk!==before){SYNC.cloudErr=0;try{localStorage.setItem('wg_cloudok',SYNC.cloudOk);localStorage.setItem('wg_cloudsvt',Math.max(svt,+localStorage.getItem('wg_cloudsvt')||0))}catch(e){}}
+ else if(SYNC.on&&!SYNC.needLogin&&(save.svt||0)>(+localStorage.getItem('wg_cloudsvt')||0)&&JSON.stringify(myProfile())+JSON.stringify(save)!==SYNC.lastSent){SYNC.cloudErr=1;clearTimeout(SYNC.retry);SYNC.retry=setTimeout(pushMine,30e3)}
+ cloudRefresh()}}
+{const _sc=scheduleSync;scheduleSync=function(){_sc();setTimeout(cloudRefresh,50)}}
+async function cloudNow(){if(SYNC.needLogin)return ACT.glogin&&ACT.glogin();if(!SYNC.on)return toast('還沒連上雲端，稍後會自動上傳');toast('☁️ 上傳中…');SYNC.lastSent='';await pushMine();const c=cloudState();toast(c.bad?`${c.ic} ${c.t}`:'☁️ 備份完成')}
+// 回到前景時：補上傳上次沒送出的進度
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&SYNC.on)setTimeout(pushMine,800)});
+setInterval(cloudRefresh,30e3);
+{const _dc=den;den=function(){_dc();if(VIEWP)return;const ex=document.querySelector('.extra');if(ex&&!document.querySelector('.cloudst'))ex.insertAdjacentHTML('afterend',cloudChip())}}
 // ===== EVENTS =====
 const ACT={
+ cloudnow:cloudNow,
  tugme:tugMe,emo:sendEmo,
  czgo:()=>startCloze(),czwrong:wrongPlay,czb:czBlank,czo:czOpt,czsub:czSubmit,czrest:czRest,wsingle:wrongSingle,wadd:wordAdd,waddok:wordAddOk,wexp:wordExport,wdel:wordDel,
  saytest:()=>{say('serendipity');toast(window.speechSynthesis?'🔈 有聽到嗎？聽不到請檢查靜音開關和音量':'這個瀏覽器不支援發音')},
