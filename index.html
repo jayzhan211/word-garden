@@ -416,6 +416,16 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 .gdots{color:var(--pink);letter-spacing:1px;font-size:11px}
 .wdel{color:var(--dim);font-size:13px;padding:2px 6px;margin-left:2px}
 .gradx{margin:8px 0;font-size:13px;color:var(--dim)}.gradx summary{cursor:pointer;font-weight:800;padding:6px 0}
+.race.tug{display:block;position:relative;padding:2px 4px 0;background:linear-gradient(180deg,#eaf7ff 0%,#fff8e6 62%,#e7f6dc 62%,#dff1d2 100%);overflow:hidden}
+.tugsvg{display:block;width:100%;height:auto}
+.tugg{transition:transform 1.4s cubic-bezier(.3,1.35,.5,1)}
+.tugsvg.close .tugj{animation:tugjig .32s ease-in-out infinite}
+@keyframes tugjig{0%,100%{transform:translateX(0)}50%{transform:translateX(1.6px)}}
+.tugcap{text-align:center;margin:-4px 0 6px}
+.tugbub{position:absolute;top:6px;z-index:2;background:#fff;border:2px solid #ffd6e4;border-radius:12px;padding:2px 8px;font-size:11.5px;font-weight:800;color:var(--pinkd);animation:tugbub 4.5s ease forwards;pointer-events:none;white-space:nowrap}
+.tugbub.r{right:8px}.tugbub.l{left:8px;color:#4f9f72;border-color:#c9efd9}
+@keyframes tugbub{0%{opacity:0;transform:translateY(6px) scale(.8)}10%,75%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
+.emos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.emos .btn{font-size:12px;padding:8px 2px;margin:0 0 8px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -2252,13 +2262,13 @@ function sanitizePartner(d){
  const n=(v,a,b)=>Math.max(a,Math.min(b,Math.floor(+v||0)));
  const beds={};if(d.beds&&typeof d.beds==='object')for(const k of FL_IDS){const a=d.beds[k];if(Array.isArray(a))beds[k]=a.slice(0,6).map(x=>x==='wilt'?'wilt':n(x,0,5))}
  const c=d.c||{};
- return{gname:String(d.gname||'').slice(0,10),flower:FL[d.flower]?d.flower:'',seen:n(d.seen,0,99999),pts:n(d.pts,0,1e6),c:{sprout:n(c.sprout,0,1e5),bud:n(c.bud,0,1e5),bloom:n(c.bloom,0,1e5),full:n(c.full,0,1e5),wilt:n(c.wilt,0,1e5)},beds,order:(Array.isArray(d.order)?d.order:[]).filter(x=>FL[x]).slice(0,18),rl:(Array.isArray(d.rl)?d.rl:[]).filter(x=>typeof x==='string'&&byW[x]).slice(0,10),bond:Math.max(0,Math.min(1e5,+d.bond||0)),ts:n(d.ts,0,9e15),day:n(d.day,0,1e7),td:n(d.td,0,1e5),wk:n(d.wk,0,1e6),stk:n(d.stk,0,1e5),gift:sanGift(d.gift),wl:sanWl(d.wl)};
+ return{gname:String(d.gname||'').slice(0,10),flower:FL[d.flower]?d.flower:'',seen:n(d.seen,0,99999),pts:n(d.pts,0,1e6),c:{sprout:n(c.sprout,0,1e5),bud:n(c.bud,0,1e5),bloom:n(c.bloom,0,1e5),full:n(c.full,0,1e5),wilt:n(c.wilt,0,1e5)},beds,order:(Array.isArray(d.order)?d.order:[]).filter(x=>FL[x]).slice(0,18),rl:(Array.isArray(d.rl)?d.rl:[]).filter(x=>typeof x==='string'&&byW[x]).slice(0,10),bond:Math.max(0,Math.min(1e5,+d.bond||0)),ts:n(d.ts,0,9e15),day:n(d.day,0,1e7),td:n(d.td,0,1e5),wk:n(d.wk,0,1e6),stk:n(d.stk,0,1e5),gift:sanGift(d.gift),wl:sanWl(d.wl),wc:sanWl(d.wc),emo:d.emo&&typeof d.emo==='object'&&['cheer','tease','petal'].includes(d.emo.e)?{e:d.emo.e,ts:Math.min(+d.emo.ts||0,Date.now()+6e4)}:null};
 }
 function myProfile(){
  const p=pet(),beds={},tmp={};
  for(const k in save.m){const m=save.m[k];if(!m||!m.seen||!byW[k])continue;const sp=speciesOf(byW[k]);(tmp[sp]=tmp[sp]||[]).push(m.n?'wilt':(m.s||0))}
  for(const sp in tmp){const a=tmp[sp],w=a.filter(x=>x==='wilt'),o=a.filter(x=>x!=='wilt').sort((x,y)=>y-x);beds[sp]=w.slice(0,2).concat(o).slice(0,6)}
- return{v:1,gname:p.gname||'',flower:p.flower||'',seen:seenCount(),pts:bloomPts(),c:gCounts(),beds,order:Object.keys(tmp).sort((a,b)=>tmp[b].length-tmp[a].length),rl:(save.rl||[]).slice(0,10),bond:save.bond||0,day:dayNum(),td:dayCount(0),wk:weekCount(),stk:liveStreak(),gift:save.giftOut||null,wl:myWeeks(),...(ROLE==='j'&&SYNC.user&&!SYNC.user.isAnonymous?{uid:SYNC.user.uid}:{})};
+ return{v:1,gname:p.gname||'',flower:p.flower||'',seen:seenCount(),pts:bloomPts(),c:gCounts(),beds,order:Object.keys(tmp).sort((a,b)=>tmp[b].length-tmp[a].length),rl:(save.rl||[]).slice(0,10),bond:save.bond||0,day:dayNum(),td:dayCount(0),wk:weekCount(),stk:liveStreak(),gift:save.giftOut||null,wl:myWeeks(),wc:myWeeksC(),emo:save.emoOut||null,...(ROLE==='j'&&SYNC.user&&!SYNC.user.isAnonymous?{uid:SYNC.user.uid}:{})};
 }
 function scheduleSync(){if(!SYNC.on)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(pushMine,2500)}
 async function pushMine(){
@@ -2361,7 +2371,7 @@ setTimeout(initSync,0);
 let VIEWP=false;
 function myStats(){const c=gCounts();return{td:dayCount(0),wk:myWeeks()[weekOf(dayNum())]||0,stk:liveStreak(),seen:seenCount(),bl:c.bloom+c.full,pts:bloomPts()}}
 function pStats(){const d=SYNC.partner;if(!d)return null;const today=d.day===dayNum();return{td:today?d.td:0,wk:(d.wl||{})[weekOf(dayNum())]||0,stk:d.stk,seen:d.seen,bl:d.c.bloom+d.c.full,pts:d.pts}}
-const DUEL=[['td','今天答題'],['wk','本週答題'],['stk','連續天數'],['seen','種下的字'],['bl','開花的字'],['pts','花園分數']];
+const DUEL=[['td','今天答題'],['wk','本週答題數'],['stk','連續天數'],['seen','種下的字'],['bl','開花的字'],['pts','花園分數']];
 function duelHTML(){
  const a=myStats(),b=pStats()||{td:0,wk:0,stk:0,seen:0,bl:0,pts:0},me=NM[myId()],pa=NM[partnerIdOf()];
  return`<table class="duel"><tr><th></th><th>${me}</th><th>${pa}</th></tr>${DUEL.map(([k,n])=>`<tr><td>${n}</td><td class="${a[k]>b[k]?'dw':''}">${a[k]}</td><td class="${b[k]>a[k]?'dw':''}">${b[k]}</td></tr>`).join('')}</table>`;
@@ -2732,8 +2742,93 @@ function czRest(){const l=CZ&&CZ.rest;CZ=null;R=null;if(l&&l.length)startRound('
 {const _dz=den;den=function(){CZ=null;_dz();const m=document.querySelector('.tasks .modes');if(m&&!m.querySelector('[data-a=czgo]'))m.insertAdjacentHTML('beforeend',`<button data-a="czgo">📝<span>文意選填</span></button>`)}}
 registerCustom();
 
+// ===== 🪢 拔河（取代分數條）=====
+// 每答一題拉 2 下，答對再多拉 1 下（練習量為主）；週一到週日一週一場，沒有追趕機制
+const TUG_MAX=54,TUG_K=60,EMO={cheer:'📣 加油！',tease:'😝 追得上嗎～',petal:'🌸 撒花給你'};
+function logCorrect(){save.daycl=save.daycl||{};const t=dayNum();save.daycl[t]=(save.daycl[t]||0)+1;const ks=Object.keys(save.daycl);if(ks.length>140)ks.sort((a,b)=>a-b).slice(0,ks.length-140).forEach(k=>delete save.daycl[k])}
+{const _m=master;master=function(w,ok){_m(w,ok);if(ok)logCorrect()}}
+function myWeeksC(){const r={},dl=save.daycl||{},cw=weekOf(dayNum());for(const k in dl){const w=weekOf(+k);if(cw-w<16)r[w]=(r[w]||0)+dl[k]}return r}
+const pullsOf=(wl,wc,w)=>2*((wl||{})[w]||0)+((wc||{})[w]||0);
+function tugNums(w){w=w??weekOf(dayNum());const P=SYNC.partner||{};return{a:pullsOf(myWeeks(),myWeeksC(),w),b:pullsOf(P.wl,P.wc,w)}}
+const tugDx=(a,b)=>-TUG_MAX*Math.tanh((a-b)/TUG_K);// 我在左邊：我領先 → 繩子往左
+function tugMood(me,a,b){const d=me?a-b:b-a,ad=Math.abs(a-b);if(ad<=6)return'strain';if(d>0)return ad>45?'win':'grin';return ad>45?'panic':'strain'}
+function tugFace(m){const E={
+ win:`<path d="M-5.5 -47 q2 -3 4 0 M1.5 -47 q2 -3 4 0" stroke="#5b4766" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M-3.5 -42.5 q3.5 4 7 0 z" fill="#d9536f"/>`,
+ grin:`<circle cx="-3.5" cy="-47" r="1.3" fill="#5b4766"/><circle cx="3.5" cy="-47" r="1.3" fill="#5b4766"/><path d="M-3 -43 q3 2.6 6 0" stroke="#5b4766" stroke-width="1.2" fill="none" stroke-linecap="round"/>`,
+ strain:`<path d="M-5.5 -48.5 l3 1.5 l-3 1.5 M5.5 -48.5 l-3 1.5 l3 1.5" stroke="#5b4766" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="-3" y="-43.6" width="6" height="2.4" rx="1" fill="#fff" stroke="#5b4766" stroke-width=".9"/><path d="M9 -52 q2 3 0 4.5 q-2 -1.5 0 -4.5z" fill="#8fd3ff"/>`,
+ panic:`<circle cx="-3.5" cy="-47" r="2" fill="#fff" stroke="#5b4766" stroke-width="1"/><circle cx="3.5" cy="-47" r="2" fill="#fff" stroke="#5b4766" stroke-width="1"/><circle cx="-3.5" cy="-46.6" r=".9" fill="#5b4766"/><circle cx="3.5" cy="-46.6" r=".9" fill="#5b4766"/><path d="M-3 -42 q1.5 -1.5 3 0 q1.5 1.5 3 0" stroke="#5b4766" stroke-width="1.1" fill="none"/><path d="M9 -53 q2 3 0 4.5 q-2 -1.5 0 -4.5z M-10 -50 q2 3 0 4.5 q-2 -1.5 0 -4.5z" fill="#8fd3ff"/>`,
+ splash:`<path d="M-5.5 -48.5 l3 3 M-2.5 -48.5 l-3 3 M2.5 -48.5 l3 3 M5.5 -48.5 l-3 3" stroke="#5b4766" stroke-width="1.1" stroke-linecap="round"/><ellipse cx="0" cy="-42.5" rx="2" ry="1.6" fill="#d9536f"/><path d="M2 -52 q5 -2 7 2 q-4 1 -7 -2z" fill="#5fc48a"/>`};return E[m]||E.grin}
+function tugChar(fl,mood,face,lean,act){// face: +1 面向右（左邊的人）
+ const F=FL[fl]?fl:'daisy',body='#7fd3a0';
+ return`<g transform="rotate(${lean})" ${act?`data-a="${act}" style="cursor:pointer"`:''}>
+ <ellipse cx="0" cy="0" rx="13" ry="2.8" fill="#00000018"/>
+ <path d="M-4 -12 L${-7*face-2} 0 M4 -12 L${-3*face+5} 0" stroke="#5fae80" stroke-width="3.2" stroke-linecap="round"/>
+ <ellipse cx="0" cy="-22" rx="9" ry="11.5" fill="${body}" stroke="#4f9f72" stroke-width="1"/>
+ <path d="M0 -27 Q${7*face} -26 ${13*face} -24" stroke="#5fae80" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="${13*face}" cy="-24" r="2.6" fill="#fff6ea" stroke="#d7b9a0" stroke-width=".8"/>
+ <g transform="translate(-20 -63.5)">${flHead(F,1.32)}</g>
+ <circle cx="0" cy="-46" r="8.6" fill="#fff6ea" stroke="#e8cdb6" stroke-width=".8"/>
+ <circle cx="-5.4" cy="-43.6" r="1.9" fill="#ffb3c6" opacity=".75"/><circle cx="5.4" cy="-43.6" r="1.9" fill="#ffb3c6" opacity=".75"/>
+ ${tugFace(mood)}</g>`}
+function tugPond(){return`<ellipse cx="160" cy="81" rx="19" ry="6.5" fill="#9fdcff" stroke="#7cc6f0" stroke-width="1.2"/><ellipse cx="160" cy="80" rx="12" ry="3" fill="#c6ecff"/><text x="146" y="80" font-size="6">🌸</text><text x="168" y="84" font-size="5">🍃</text>`}
+function tugSVG(a,b,o={}){
+ const me=myId(),pa=partnerIdOf(),P=SYNC.partner||{},myF=pet().flower,paF=P.flower;
+ const dx=o.dx??tugDx(a,b),mm=o.final?(a>=b?'win':'splash'):tugMood(true,a,b),pm=o.final?(b>=a?'win':'splash'):tugMood(false,a,b);
+ const ml=mm==='win'||mm==='grin'?-16:-10,pl=pm==='win'||pm==='grin'?16:10;
+ let chars;
+ if(o.final){const lw=a>=b;// 輸的人在花池裡
+  const L=lw?`<g transform="translate(70 80)">${tugChar(myF,'win',1,-12)}</g>`:`<g transform="translate(160 86)">${tugChar(myF,'splash',1,8)}</g>`;
+  const Rr=lw?`<g transform="translate(160 86)">${tugChar(paF,'splash',-1,-8)}</g>`:`<g transform="translate(250 80)">${tugChar(paF,'win',-1,12)}</g>`;
+  chars=`${L}${Rr}<ellipse cx="160" cy="83" rx="19" ry="5" fill="#9fdcff" opacity=".92"/><text x="134" y="66" font-size="9">💦</text><text x="176" y="62" font-size="8">🌸</text><text x="181" y="72" font-size="7">💦</text>`;
+  return`<svg class="tugsvg" viewBox="0 0 320 96">${tugPond()}${chars}</svg>`}
+ return`<svg class="tugsvg ${Math.abs(a-b)<=6?'close':''}" viewBox="0 0 320 96">${tugPond()}
+ <g class="tugg" style="transform:translateX(${(o.from??dx).toFixed(1)}px)" data-to="${dx.toFixed(1)}"><g class="tugj">
+  <path d="M101 56 Q160 63 219 56" stroke="#c9a06a" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M101 56 Q160 63 219 56" stroke="#e8c896" stroke-width="1" fill="none" stroke-dasharray="2 3"/>
+  <g transform="translate(160 59.6)"><path d="M0 0 L-7 -5 L-7 5Z M0 0 L7 -5 L7 5Z" fill="#ff8fb1" stroke="#e0628d" stroke-width=".8" stroke-linejoin="round"/><circle r="2.4" fill="#ffd166" stroke="#e0a43c" stroke-width=".7"/><path d="M-1 2 L-3 9 M1 2 L3 9" stroke="#ff8fb1" stroke-width="1.6" stroke-linecap="round"/></g>
+  <g transform="translate(88 80)">${tugChar(myF,mm,1,ml,'tugme')}</g>
+  <g transform="translate(232 80)">${tugChar(paF,pm,-1,pl)}</g>
+  <text x="88" y="93" font-size="8" text-anchor="middle" fill="#8a6a9a" font-weight="800">${NM[me]} ${a}</text><text x="232" y="93" font-size="8" text-anchor="middle" fill="#8a6a9a" font-weight="800">${b} ${NM[pa]}</text>
+ </g></g></svg>`}
+const tugKey=()=>'wg_tug_'+myId();
+function tugSeen(){try{return JSON.parse(localStorage.getItem(tugKey())||'null')}catch(e){return null}}
+raceHTML=function(){
+ const{a,b}=tugNums(),cw=weekOf(dayNum()),me=NM[myId()],pa=NM[partnerIdOf()],s=tugSeen(),same=s&&s.w===cw;
+ const lead=a===b?'勢均力敵！兩邊都在用力 💪':a>b?`${me}多拉了 ${a-b} 下 💪`:`${pa}多拉了 ${b-a} 下 💪`;
+ let bub='';const P=SYNC.partner||{};
+ if(P.emo&&P.emo.ts>((s&&s.emo)||0)&&Date.now()-P.emo.ts<3*864e5)bub=`<div class="tugbub r">${esc(EMO[P.emo.e]||'')}</div>`;
+ else if(same&&b>s.b)bub=`<div class="tugbub r">趁你不在拉了 ${b-s.b} 下 😤</div>`;
+ if(same&&a>s.a)bub+=`<div class="tugbub l">嘿咻！+${a-s.a}</div>`;
+ return`<div class="race tug" data-a="duelm">${bub}${tugSVG(a,b,{from:same?s.dx:0})}</div><div class="small tugcap">本週拔河 · ${lead}</div>`;
+};
+function tugAnimate(){const g=document.querySelector('.tugg');if(!g)return;const to=+g.dataset.to;
+ const{a,b}=tugNums(),s=tugSeen()||{};try{localStorage.setItem(tugKey(),JSON.stringify({w:weekOf(dayNum()),a,b,dx:to,emo:Math.max(s.emo||0,(SYNC.partner&&SYNC.partner.emo&&SYNC.partner.emo.ts)||0)}))}catch(e){}
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{g.style.transform=`translateX(${to}px)`}))}
+{const _dz=den;den=function(){_dz();tugAnimate()}}
+function tugMe(){SFX.tick();ACT.round('mix')}
+// 丟表情給對方（對方下次打開時，對方的角色旁會冒泡）
+function sendEmo(e){if(!EMO[e])return;save.emoOut={e,ts:Date.now()};persist();toast(`已經丟給${NM[partnerIdOf()]}了：${EMO[e]}`);$('#modalRoot').innerHTML='';modalDone=null}
+duelModal=function(){const{a,b}=tugNums();openModal(`<div class="banner" style="margin-top:0">🪢 ${NM[myId()]} vs ${NM[partnerIdOf()]}</div>
+ <div class="race tug" style="cursor:default">${tugSVG(a,b)}</div>
+ <div class="small" style="text-align:center;margin:2px 0 8px">每答一題拉 <b>2</b> 下，答對再多拉 <b>1</b> 下。週一到週日一場，週一結算，輸的人掉進花池 🌸</div>
+ <div class="emos">${Object.keys(EMO).map(k=>`<button class="btn" data-a="emo" data-v="${k}">${EMO[k]}</button>`).join('')}</div>
+ ${duelHTML()}
+ <button class="btn gold" data-a="vtog" data-v="p">👀 去看${NM[partnerIdOf()]}的花園</button><button class="btn ghost" data-a="closeModal">關閉</button>`)};
+// 獎盃與週結算也改用拉的次數（舊的週沒有答對紀錄，兩邊都只算 2×答題，勝負不變）
+trophies=function(){const a=myWeeks(),ac=myWeeksC(),P=SYNC.partner||{},b=P.wl||{},bc=P.wc||{},cw=weekOf(dayNum()),me={n:0},pa={n:0},hist=[];
+ for(const k of new Set([...Object.keys(a),...Object.keys(b)])){const w=+k;if(w>=cw)continue;const x=pullsOf(a,ac,w),y=pullsOf(b,bc,w);if(!x&&!y)continue;if(x>y)me.n++;else if(y>x)pa.n++;hist.push([w,x,y])}
+ return{me:me.n,pa:pa.n,hist:hist.sort((p,q)=>q[0]-p[0])}};
+weekResult=function(){const cw=weekOf(dayNum());if(!SYNC.partner||(save.wkShown||0)>=cw)return false;
+ const{a,b}=tugNums(cw-1);save.wkShown=cw;persist();if(!a&&!b)return false;
+ const me=NM[myId()],pa=NM[partnerIdOf()],t=trophies(),win=a>b?me:b>a?pa:null,lose=a>b?pa:b>a?me:null;
+ openModal(`<div class="banner" style="margin-top:0">🪢 上週拔河結算</div>
+ ${win?`<div class="race tug" style="cursor:default">${tugSVG(a,b,{final:true})}</div>`:''}
+ <div style="text-align:center;font-size:20px;margin:6px 0"><b>${me} ${a}</b> : <b>${b} ${pa}</b></div>
+ <div class="sub" style="text-align:center">${win?`🏆 <b>${win}</b> 贏了！<b>${lose}</b> 噗通～掉進花池 🌸`:'平手！兩個人都站得穩穩的 💪'}</div>
+ <div class="small" style="text-align:center;margin:8px 0">獎盃總數　${me} ${'🏆'.repeat(Math.min(t.me,10))||'0'}　·　${pa} ${'🏆'.repeat(Math.min(t.pa,10))||'0'}</div>
+ <button class="btn gold" data-a="closeModal">這週繼續拉 🪢</button>`);modalDone=den;if(win===me)confetti();return true};
+
 // ===== EVENTS =====
 const ACT={
+ tugme:tugMe,emo:sendEmo,
  czgo:()=>startCloze(),czwrong:wrongPlay,czb:czBlank,czo:czOpt,czsub:czSubmit,czrest:czRest,wsingle:wrongSingle,wadd:wordAdd,waddok:wordAddOk,wexp:wordExport,wdel:wordDel,
  saytest:()=>{say('serendipity');toast(window.speechSynthesis?'🔈 有聽到嗎？聽不到請檢查靜音開關和音量':'這個瀏覽器不支援發音')},
  tm:timeMachine,tmpick:tmPick,
