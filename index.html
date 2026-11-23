@@ -437,7 +437,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 <div id="flash"></div>
 <div id="toast"></div>
 <div id="modalRoot"></div>
-<script src="cloze-data.js"></script>
+<script src="cloze-data.js?v=202611232005"></script>
 <script>
 // ===== WORD BANK: [word, pos, 中文, English definition, synonyms (first fits the sentence), example, 字根/陷阱] =====
 const RAW=[
@@ -2826,6 +2826,11 @@ weekResult=function(){const cw=weekOf(dayNum());if(!SYNC.partner||(save.wkShown|
  <div class="small" style="text-align:center;margin:8px 0">獎盃總數　${me} ${'🏆'.repeat(Math.min(t.me,10))||'0'}　·　${pa} ${'🏆'.repeat(Math.min(t.pa,10))||'0'}</div>
  <button class="btn gold" data-a="closeModal">這週繼續拉 🪢</button>`);modalDone=den;if(win===me)confetti();return true};
 
+// ===== 自動更新：主畫面 App 回到前景時檢查新版 =====
+const APP_VER='202611232005';
+async function checkUpdate(){try{if(R||$('#modalRoot').innerHTML)return;const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
+ if(v&&v!==APP_VER&&/^\d+$/.test(v)){if(sessionStorage.getItem('wg_upd')===v)return;sessionStorage.setItem('wg_upd',v);persist();toast('🌱 有新版本，更新中…');setTimeout(()=>location.replace(location.pathname+'?v='+v),600)}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});setTimeout(checkUpdate,1500);
 // ===== EVENTS =====
 const ACT={
  tugme:tugMe,emo:sendEmo,
