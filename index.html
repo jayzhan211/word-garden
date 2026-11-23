@@ -399,6 +399,23 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 .pwa b{flex:1}.pwa .x{color:#a493a8;padding:0 4px}
 .wrow{display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-top:1px solid #f3e6ef;font-size:14px}.wrow b{font-family:Georgia,serif;font-size:16px}
 .trophy{font-size:12px;text-align:center;color:#b08a2e;margin:-2px 0 6px}
+.modes{grid-template-columns:repeat(4,1fr)!important}
+.czp{background:#fffdf7;border:2px solid #f1dfc9;border-radius:20px;padding:14px 14px 12px;margin:8px 0;box-shadow:0 6px 16px #ecd9c6}
+.czt{font-family:Georgia,"Times New Roman",serif;font-size:16.5px;line-height:2.05;color:#4f3d5c}
+.czb{display:inline-block;padding:0 7px;margin:0 1px;border-radius:9px;border:2px dashed var(--pink2);background:#fff;font:inherit;font-size:15px;line-height:1.6;color:var(--pinkd);font-weight:700;font-family:Nunito,sans-serif}
+.czb.filled{border-style:solid;border-color:#e8dfff;background:#f7f2ff;color:#6b4a8a}
+.czb.on{border-style:solid;border-color:#ffc46b;background:#fff6e0;box-shadow:0 0 0 3px #ffe8b8}
+.czb.ok{border:2px solid var(--green);background:#dcf8ec;color:#2f7a5e}
+.czb.no{border:2px solid var(--red);background:#ffe5ec;color:#c0466c}.czb.no s{opacity:.55;font-weight:600}
+.czbank{position:sticky;bottom:0;z-index:5;background:linear-gradient(180deg,#fff0f5ee,#fff6f0);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:2px solid var(--line);border-radius:20px 20px 0 0;padding:8px 10px 10px;margin:8px -4px 0}
+.czopts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.czo{background:#fff;border:2px solid var(--line);border-radius:12px;padding:7px 4px;font-family:Georgia,serif;font-size:14.5px;color:#6b4a8a;box-shadow:0 2px 0 var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.czo i{font-style:normal;font-family:Nunito,sans-serif;font-size:10px;font-weight:800;color:var(--lav);margin-right:4px}
+.czo.used{opacity:.3;box-shadow:none}
+.czx{padding:8px 2px;border-top:1px dashed #f3e6ee;cursor:pointer}.czx:first-of-type{border-top:none}.czx b{color:#2f7a5e;font-family:Georgia,serif}.czx.no b{color:#c0466c}
+.gdots{color:var(--pink);letter-spacing:1px;font-size:11px}
+.wdel{color:var(--dim);font-size:13px;padding:2px 6px;margin-left:2px}
+.gradx{margin:8px 0;font-size:13px;color:var(--dim)}.gradx summary{cursor:pointer;font-weight:800;padding:6px 0}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -410,6 +427,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 <div id="flash"></div>
 <div id="toast"></div>
 <div id="modalRoot"></div>
+<script src="cloze-data.js"></script>
 <script>
 // ===== WORD BANK: [word, pos, 中文, English definition, synonyms (first fits the sentence), example, 字根/陷阱] =====
 const RAW=[
@@ -2603,8 +2621,120 @@ function tmPick(i){
 }
 {const _am=accountMenu;accountMenu=function(){_am();const g=document.querySelector('#modalRoot .btn.ghost[data-a=closeModal]');if(g)g.insertAdjacentHTML('beforebegin',`<button class="btn" data-a="tm">🛟 從雲端紀錄找回進度</button>`)}}
 
+// ===== 📝 文意選填＋自訂常錯單字 =====
+// 錯題本：答錯自動收進來，連對 GRAD 次就畢業；也可以自己貼字（📌）。存在 save.my / save.cw，跟著雲端同步。
+const GRAD=3,CLOZE=window.CLOZE||[],CZRE=/\[\[([^|\]]+)\|([^|\]]+)\|([^\]]+)\]\]/g;
+function registerCustom(){const cw=save.cw||{};for(const k in cw){if(byW[k]||!cw[k]||cw[k].del)continue;const o={w:k,p:cw[k].p||'',zh:String(cw[k].zh||''),en:'',syn:[],ex:'',rt:'',t:2,cw:1};W.push(o);byW[k]=o}}
+const isPinned=k=>{const x=(save.my||{})[k];return!!x&&!x.del};
+function activeWrong(w){const m=save.m[w.w];if(isPinned(w.w))return!m||!m.seen||!!m.n||(m.c||0)<GRAD;if(!m||!m.seen)return false;return!!m.n||((m.x||0)>0&&(m.c||0)<GRAD)}
+function gradList(){return W.filter(w=>{if(activeWrong(w))return false;const m=save.m[w.w];return isPinned(w.w)||(m&&m.seen&&(m.x||0)>0)})}
+wrongList=function(){registerCustom();return W.filter(activeWrong).sort((a,b)=>{const x=save.m[a.w]||{},y=save.m[b.w]||{};return(y.n||0)-(x.n||0)||(y.x||0)-(x.x||0)||isPinned(b.w)-isPinned(a.w)||(y.lx||0)-(x.lx||0)})};
+// 單句退路：錯題本回合優先出「句子填空」，沒有例句的字才考意思
+{const _pt=pickType;pickType=function(w,mode){if(mode==='wrong'){const pool=[['tc',.7],['def',.3]].filter(p=>canType(w,p[0]));return pool.length?wpick(pool):'def'}return _pt(w,mode)}}
+// 雲端合併：自訂清單、自訂字義、文意選填紀錄
+{const _ms=mergeSaves;mergeSaves=function(L,C){const out=_ms(L,C);if(!C||typeof C!=='object'||!C.m||!L||!L.m)return out;
+ const mm=(a,b)=>{const o={};for(const x of [a||{},b||{}])for(const k in x){const v=x[k];if(v&&(!o[k]||(v.t||0)>(o[k].t||0)))o[k]=v}return o};
+ out.my=mm(L.my,C.my);out.cw=mm(L.cw,C.cw);const cz={};for(const x of [L.cz||{},C.cz||{}])for(const k in x)cz[k]=Math.max(cz[k]??-1,+x[k]||0);out.cz=cz;return out}}
+
+function wrongBook(){
+ const l=wrongList(),g=gradList(),set=new Set(l.slice(0,20).map(w=>w.w)),bp=czBest(set),cov=bp?czWords(bp).filter(w=>set.has(w)).length:0;
+ const row=w=>{const m=save.m[w.w]||{},c=Math.min(GRAD,m.c||0),pin=isPinned(w.w);return`<div class="wrow"><span data-a="card" data-v="${esc(w.w)}" style="flex:1;cursor:pointer">${pin?'📌 ':''}<b>${esc(w.w)}</b> <span class="small">${esc((w.zh||'').split('；')[0])}</span></span><span class="small">${m.n?'🥀 ':''}${m.x?`錯 ${m.x}　`:''}<span class="gdots">${'●'.repeat(c)}${'○'.repeat(GRAD-c)}</span>${pin?` <button class="wdel" data-a="wdel" data-v="${esc(w.w)}">✕</button>`:''}</span></div>`};
+ openModal(`<div class="banner" style="margin-top:0">📕 錯題本</div><div class="small">答錯的字會自動收進來，<b>連對 ${GRAD} 次</b>（●●●）就畢業。📌 是你自己加的字</div>
+ ${l.length?`<div style="max-height:40vh;overflow:auto;margin:6px 0">${l.slice(0,80).map(row).join('')}</div>
+ ${cov>=1?`<button class="btn gold" data-a="czwrong">📝 文意選填（這篇有 ${cov} 個你的錯字）</button>`:''}
+ <button class="btn ${cov>=1?'':'gold'}" data-a="wsingle">▶ 單句練習最常錯的 ${Math.min(10,l.length)} 個</button>`
+ :`<div class="sub" style="text-align:center;margin:14px 0">目前沒有要練的錯字 ✨</div>`}
+ <button class="btn" data-a="wadd">＋ 加自己的字／匯入匯出</button>
+ ${g.length?`<details class="gradx"><summary>🎓 已畢業 ${g.length} 個</summary>${g.slice(0,120).map(row).join('')}</details>`:''}
+ <button class="btn ghost" data-a="closeModal">關閉</button>`)}
+function wrongSingle(){const l=wrongList().slice(0,10);if(!l.length)return;$('#modalRoot').innerHTML='';modalDone=null;startRound('wrong',l)}
+wrongPlay=function(){const l=wrongList();if(!l.length)return;$('#modalRoot').innerHTML='';modalDone=null;const set=new Set(l.slice(0,20).map(w=>w.w)),p=czBest(set),cov=p?czWords(p).filter(w=>set.has(w)):[];
+ if(p&&cov.length>=1)startCloze(p,l.filter(w=>!cov.includes(w.w)).slice(0,10));else startRound('wrong',l.slice(0,10))};
+
+// --- 加字／匯入匯出 ---
+function wordAdd(){openModal(`<div class="banner" style="margin-top:0">＋ 加自己的常錯字</div>
+ <div class="small">一行一個，或用逗號隔開。字庫裡沒有的字，後面加上中文就能收進來。匯出的清單也可以直接貼回來。</div>
+ <textarea id="waddt" class="inp" rows="7" placeholder="obdurate&#10;laconic, torpor&#10;sesquipedalian = 冗長的"></textarea>
+ <div id="waddmsg" class="small"></div>
+ <button class="btn gold" data-a="waddok">加入錯題本</button>
+ <button class="btn" data-a="wexp">📋 匯出我的錯題本（複製文字）</button>
+ <button class="btn ghost" data-a="wbook">← 回錯題本</button>`)}
+function lemma(w){if(byW[w])return w;for(const[a,b]of[['ies','y'],['ied','y'],['es',''],['s',''],['ed',''],['ed','e'],['d',''],['ing',''],['ing','e'],['ly','']])if(w.endsWith(a)&&byW[w.slice(0,-a.length)+b])return w.slice(0,-a.length)+b;return null}
+function pinWord(k){const now=Date.now();(save.my||(save.my={}))[k]={t:now};const m=save.m[k];if(m){m.c=0;m.t=now}}
+function wordAddOk(){
+ const t=($('#waddt')||{}).value||'';const added=[],unk=[],now=Date.now();registerCustom();
+ for(let tok of t.split(/[\n,，、;；]+/)){tok=tok.replace(/^[\s\-*•📌\d.)]+/,'').trim();if(!tok)continue;
+  const m=tok.match(/^([A-Za-z][A-Za-z'’\-]*(?: [A-Za-z][A-Za-z'’\-]*)*)\s*(?:[=:：]\s*)?(.*)$/);if(!m){unk.push(tok);continue}
+  const raw=m[1].toLowerCase().replace(/’/g,"'"),zh=m[2].trim(),k=lemma(raw);
+  if(k){pinWord(k);added.push(k)}
+  else if(zh){(save.cw||(save.cw={}))[raw]={zh:zh.slice(0,40),t:now};registerCustom();pinWord(raw);added.push(raw)}
+  else unk.push(raw)}
+ persist();
+ const msg=$('#waddmsg');if(msg)msg.innerHTML=`${added.length?`<span style="color:var(--green)">✓ 加入 ${added.length} 個：${added.slice(0,12).map(esc).join(', ')}${added.length>12?'…':''}</span>`:''}${unk.length?`<br><span style="color:var(--red)">字庫裡沒有：${unk.slice(0,10).map(esc).join(', ')}</span><br>在後面加上中文再加一次，例如 <b>${esc(unk[0])} = 中文</b>`:''}`;
+ if(added.length){SFX.hit();const ta=$('#waddt');if(ta)ta.value=unk.join('\n')}
+}
+function exportText(){const lines=[];for(const w of wrongList()){const c=(save.cw||{})[w.w];lines.push(c&&byW[w.w].cw?`${w.w} = ${c.zh}`:w.w)}return lines.join('\n')}
+async function wordExport(){const s=exportText();if(!s)return toast('錯題本是空的');try{await navigator.clipboard.writeText(s);toast(`📋 已複製 ${s.split('\n').length} 個字`)}catch(e){const ta=$('#waddt');if(ta){ta.value=s;ta.select();toast('已放進上面的框框，長按複製')}}}
+function wordDel(k){const x=(save.my||{})[k];if(!x)return;save.my[k]={t:Date.now(),del:1};persist();wrongBook()}
+
+// --- 文意選填 ---
+const czWords=p=>[...p.x.matchAll(CZRE)].map(m=>m[1]);
+function czParse(p){const blanks=[],segs=[];let last=0,m;CZRE.lastIndex=0;
+ while((m=CZRE.exec(p.x))){segs.push(p.x.slice(last,m.index));segs.push({i:blanks.length});blanks.push({w:m[1],s:m[2],clue:m[3]});last=CZRE.lastIndex}
+ segs.push(p.x.slice(last));
+ const opts=shuffle([...blanks.map((b,i)=>({w:b.w,s:b.s,ans:i})),...p.d.map(d=>{const[a,b]=d.split('|');return{w:a,s:b||a,ans:-1}})]);
+ return{segs,blanks,opts}}
+function czScore(p,focus){const t=dayNum();let sc=0;
+ for(const k of czWords(p)){if(focus&&focus.has(k)){sc+=6;continue}const m=save.m[k];sc+=m&&m.n?4:m&&m.seen&&(m.due??0)<=t?2:!m||!m.seen?.6:.3}
+ const last=(save.cz||{})[p.id];if(last!=null){const ago=t-last;sc*=ago<1?.05:ago<4?.3:ago<10?.7:1}return sc}
+function czBest(focus){if(!CLOZE.length)return null;return CLOZE.map(p=>[p,czScore(p,focus)]).sort((a,b)=>b[1]-a[1])[0][0]}
+function czPick(){const s=CLOZE.map(p=>[p,czScore(p)]).sort((a,b)=>b[1]-a[1]).slice(0,3);return wpick(s.map(x=>[x[0],Math.max(.01,x[1])]))}
+let CZ=null;
+function startCloze(p,rest){p=p||czPick();if(!p)return toast('題庫還是空的');clearInterval(tmr);
+ R={cz:1,steps:[],i:0,locked:true};// 讓雲端同步不要在作答中把畫面切回花園
+ CZ={p,...czParse(p),fill:[],act:0,done:false,rest:rest||[]};CZ.fill=CZ.blanks.map(()=>null);czRender();window.scrollTo(0,0)}
+function czRender(){
+ const c=CZ,n=c.blanks.length,k=c.fill.filter(x=>x!=null).length,L='ABCDEFGHIJKLMNOP';
+ const used=new Map();c.fill.forEach((j,i)=>{if(j!=null)used.set(j,i)});
+ const body=c.segs.map(s=>{if(typeof s==='string')return esc(s);const i=s.i,j=c.fill[i],o=j!=null?c.opts[j]:null;
+  if(c.done){const ok=o&&o.ans===i;return`<span class="czb ${ok?'ok':'no'}">(${i+1}) ${ok?esc(o.s):`<s>${o?esc(o.s):'—'}</s> ${esc(c.blanks[i].s)}`}</span>`}
+  return`<button class="czb ${i===c.act?'on':''} ${o?'filled':''}" data-a="czb" data-v="${i}">(${i+1}) ${o?esc(o.s):'&#12288;&#12288;&#12288;'}</button>`}).join('');
+ const head=`<div class="top"><button data-a="den">← 回花園</button><b>📝 文意選填</b><span>${c.done?'':`${k}/${n}`}</span></div>`;
+ if(!c.done){
+  app.innerHTML=head+`<div class="czp"><div class="ql"><span>${esc(c.p.t)} · 每個選項最多用一次</span>${diffChip()}</div><div class="czt">${body}</div></div>
+  <div class="czbank"><div class="small" style="margin-bottom:4px">${c.act>=0?`第 (${c.act+1}) 格：點一個字填進去`:'點空格可以換答案'}</div><div class="czopts">${c.opts.map((o,j)=>`<button class="czo ${used.has(j)?'used':''}" data-a="czo" data-v="${j}"><i>${L[j]}</i>${esc(o.s)}</button>`).join('')}</div>
+  <button class="btn gold" data-a="czsub" ${k<n?'disabled':''} style="margin-bottom:0">${k<n?`還有 ${n-k} 格`:'交卷 ✓'}</button></div>`;
+  const on=document.querySelector('.czb.on');if(on&&on.scrollIntoView&&c.moved)on.scrollIntoView({block:'nearest',behavior:'smooth'});c.moved=0;return}
+ const ok=c.res.filter(Boolean).length;
+ app.innerHTML=head+`<div class="banner">${ok===n?'全對！太強了 ✨':`${ok} / ${n} 格答對`}</div>
+ <div class="czp"><div class="czt">${body}</div></div>
+ <div class="tasks"><div class="th">逐格解析</div>${c.blanks.map((b,i)=>{const o=c.opts[c.fill[i]],w=byW[b.w];return`<div class="czx ${c.res[i]?'':'no'}" data-a="card" data-v="${esc(b.w)}"><b>(${i+1}) ${c.res[i]?'✓':'✗'} ${esc(b.s)}</b> <span class="small">${w?esc(w.zh.split('；')[0]):''}${c.res[i]?'':` · 你選了 ${esc(o?o.s:'—')}`}</span><div class="small">💡 ${esc(b.clue)}</div></div>`}).join('')}
+ <div class="small" style="margin-top:6px">答錯的字已經收進 📕 錯題本</div></div>
+ <div class="kv"><div class="stat"><b>+${c.xp} ⭐</b><span>花園成長</span></div><div class="stat"><b>+${c.ink} 💎</b><span>墨晶</span></div></div>
+ ${c.rest.length?`<button class="btn gold" data-a="czrest">▶ 繼續練剩下 ${c.rest.length} 個錯字（單句）</button>`:''}
+ <button class="btn ${c.rest.length?'':'gold'}" data-a="czgo">📝 再一篇</button><button class="btn" data-a="den">🌸 回花園</button>`;
+}
+function czBlank(i){const c=CZ;if(!c||c.done)return;i=+i;if(c.fill[i]!=null&&c.act===i)c.fill[i]=null;c.act=i;SFX.tick();czRender()}
+function czOpt(j){const c=CZ;if(!c||c.done)return;j=+j;const prev=c.fill.indexOf(j);
+ if(prev>=0){c.fill[prev]=null;if(c.act<0||prev===c.act){c.act=prev;SFX.tick();return czRender()}}
+ if(c.act<0)c.act=c.fill.indexOf(null);if(c.act<0)return;
+ c.fill[c.act]=j;SFX.tick();const n=c.fill.length;let nx=-1;for(let d=1;d<=n;d++){const t=(c.act+d)%n;if(c.fill[t]==null){nx=t;break}}c.act=nx;c.moved=1;czRender()}
+function czSubmit(){const c=CZ;if(!c||c.done||c.fill.includes(null))return;c.done=true;c.res=c.blanks.map((b,i)=>c.opts[c.fill[i]].ans===i);
+ let ok=0;c.xp=0;c.ink=0;
+ c.blanks.forEach((b,i)=>{const w=byW[b.w];if(!w)return;const r=c.res[i];save.total++;if(r){ok++;save.correct++;gainCard(w);petXP(2,w);c.xp+=2;save.ink+=2;c.ink+=2}master(w,r)});
+ const n=c.blanks.length,perfect=ok===n;adapt(ok/n>=.75);petXP(5);c.xp+=5;if(perfect){save.ink+=5;c.ink+=5}
+ const p=pet(),t=dayNum();if(p.played!==t){p.streak=p.played===t-1?p.streak+1:1;p.played=t}p.rounds=(p.rounds||0)+1;addBond(1.5);
+ if(save.lastDay!==today()){save.streak=save.lastDay===today(1)?save.streak+1:1;save.lastDay=today()}
+ (save.cz||(save.cz={}))[c.p.id]=t;persist();if(ok/n>=.6){SFX.win();confetti()}else SFX.hurt();czRender();window.scrollTo(0,0)}
+function czRest(){const l=CZ&&CZ.rest;CZ=null;R=null;if(l&&l.length)startRound('wrong',l);else den()}
+
+// 首頁加上「文意選填」入口
+{const _dz=den;den=function(){CZ=null;_dz();const m=document.querySelector('.tasks .modes');if(m&&!m.querySelector('[data-a=czgo]'))m.insertAdjacentHTML('beforeend',`<button data-a="czgo">📝<span>文意選填</span></button>`)}}
+registerCustom();
+
 // ===== EVENTS =====
 const ACT={
+ czgo:()=>startCloze(),czwrong:wrongPlay,czb:czBlank,czo:czOpt,czsub:czSubmit,czrest:czRest,wsingle:wrongSingle,wadd:wordAdd,waddok:wordAddOk,wexp:wordExport,wdel:wordDel,
  saytest:()=>{say('serendipity');toast(window.speechSynthesis?'🔈 有聽到嗎？聽不到請檢查靜音開關和音量':'這個瀏覽器不支援發音')},
  tm:timeMachine,tmpick:tmPick,
  glogin:googleLogin,glogout:googleLogout,
