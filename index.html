@@ -2359,9 +2359,9 @@ setTimeout(initSync,0);
 
 // ===== 👀 看彼此的花園 + 🏆 比拚 =====
 let VIEWP=false;
-function myStats(){const c=gCounts();return{td:dayCount(0),wk:weekCount(),stk:liveStreak(),seen:seenCount(),bl:c.bloom+c.full,pts:bloomPts()}}
-function pStats(){const d=SYNC.partner;if(!d)return null;const today=d.day===dayNum();return{td:today?d.td:0,wk:d.wk,stk:d.stk,seen:d.seen,bl:d.c.bloom+d.c.full,pts:d.pts}}
-const DUEL=[['td','今天答題'],['wk','近 7 天答題'],['stk','連續天數'],['seen','種下的字'],['bl','開花的字'],['pts','花園分數']];
+function myStats(){const c=gCounts();return{td:dayCount(0),wk:myWeeks()[weekOf(dayNum())]||0,stk:liveStreak(),seen:seenCount(),bl:c.bloom+c.full,pts:bloomPts()}}
+function pStats(){const d=SYNC.partner;if(!d)return null;const today=d.day===dayNum();return{td:today?d.td:0,wk:(d.wl||{})[weekOf(dayNum())]||0,stk:d.stk,seen:d.seen,bl:d.c.bloom+d.c.full,pts:d.pts}}
+const DUEL=[['td','今天答題'],['wk','本週答題'],['stk','連續天數'],['seen','種下的字'],['bl','開花的字'],['pts','花園分數']];
 function duelHTML(){
  const a=myStats(),b=pStats()||{td:0,wk:0,stk:0,seen:0,bl:0,pts:0},me=NM[myId()],pa=NM[partnerIdOf()];
  return`<table class="duel"><tr><th></th><th>${me}</th><th>${pa}</th></tr>${DUEL.map(([k,n])=>`<tr><td>${n}</td><td class="${a[k]>b[k]?'dw':''}">${a[k]}</td><td class="${b[k]>a[k]?'dw':''}">${b[k]}</td></tr>`).join('')}</table>`;
@@ -2369,7 +2369,7 @@ function duelHTML(){
 function raceHTML(){
  const a=myStats().wk,b=(pStats()||{wk:0}).wk,me=NM[myId()],pa=NM[partnerIdOf()],tot=a+b,pct=tot?a/tot*100:50;
  const lead=a===b?'平手':a>b?`${me}領先 ${a-b}`:`${pa}領先 ${b-a}`;
- return`<div class="race" data-a="duelm"><b>🏆 ${me} ${a}</b><div class="bar"><i style="width:${pct}%"></i></div><b>${b} ${pa}</b></div><div class="small" style="text-align:center;margin:-4px 0 6px">近 7 天答題 · ${lead}</div>`;
+ return`<div class="race" data-a="duelm"><b>🏆 ${me} ${a}</b><div class="bar"><i style="width:${pct}%"></i></div><b>${b} ${pa}</b></div><div class="small" style="text-align:center;margin:-4px 0 6px">本週答題（週一起算）· ${lead}</div>`;
 }
 function vtogHTML(){return`<div class="vtog"><button class="${VIEWP?'':'on'}" data-a="vtog" data-v="me">🌷 ${esc(myLabel())}</button><button class="${VIEWP?'on':''}" data-a="vtog" data-v="p">👀 ${esc(pLabel())}</button></div>`}
 function pBedsHTML(d){
