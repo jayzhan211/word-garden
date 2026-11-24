@@ -438,7 +438,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 <div id="flash"></div>
 <div id="toast"></div>
 <div id="modalRoot"></div>
-<script src="cloze-data.js?v=202611240832"></script>
+<script src="cloze-data.js?v=202611241937"></script>
 <script>
 // ===== WORD BANK: [word, pos, 中文, English definition, synonyms (first fits the sentence), example, 字根/陷阱] =====
 const RAW=[
@@ -2282,14 +2282,14 @@ async function pushMine(){
 }
 // ===== 雲端合併：兩邊的進度一個字一個字合併，只會多不會少 =====
 const cntSeen=x=>Object.values((x&&x.m)||{}).filter(m=>m&&m.seen).length;
-function pickWord(a,b){if(!a)return b;if(!b)return a;if(!!a.seen!==!!b.seen)return a.seen?a:b;const ta=a.t||0,tb=b.t||0;if(ta!==tb)return ta>tb?a:b;const ca=(a.c||0)+(a.x||0),cb=(b.c||0)+(b.x||0);if(ca!==cb)return ca>cb?a:b;return (a.s||0)>=(b.s||0)?a:b}
+function pickMerge(a,b){if(!a)return b;if(!b)return a;if(!!a.seen!==!!b.seen)return a.seen?a:b;const ta=a.t||0,tb=b.t||0;if(ta!==tb)return ta>tb?a:b;const ca=(a.c||0)+(a.x||0),cb=(b.c||0)+(b.x||0);if(ca!==cb)return ca>cb?a:b;return (a.s||0)>=(b.s||0)?a:b}
 function mergeSaves(L,C){
  if(!C||typeof C!=='object'||!C.m)return L;if(!L||!L.m)return Object.assign(defSave(),C);
  const lS=cntSeen(L),cS=cntSeen(C),lT=+L.svt||0,cT=+C.svt||0;
  // 名字、花等設定：用字比較多的那份；一樣多就用比較新的
  const base=(cS>lS||(cS===lS&&cT>lT))?C:L,other=base===L?C:L;
  const out=JSON.parse(JSON.stringify(Object.assign(defSave(),base)));
- const m={};for(const k of new Set([...Object.keys(L.m),...Object.keys(C.m)]))m[k]=JSON.parse(JSON.stringify(pickWord(L.m[k],C.m[k])));out.m=m;
+ const m={};for(const k of new Set([...Object.keys(L.m),...Object.keys(C.m)]))m[k]=JSON.parse(JSON.stringify(pickMerge(L.m[k],C.m[k])));out.m=m;
  const dl={};for(const x of [L.daylog||{},C.daylog||{}])for(const k in x)dl[k]=Math.max(dl[k]||0,+x[k]||0);out.daylog=dl;
  const vs={};for(const g of [...(L.vase||[]),...(C.vase||[])])if(g&&g.ts)vs[g.ts]=g;out.vase=Object.values(vs).sort((a,b)=>a.ts-b.ts).slice(-60);
  const go=[L.giftOut,C.giftOut].filter(Boolean).sort((a,b)=>(b.ts||0)-(a.ts||0))[0];if(go)out.giftOut=go;
@@ -2759,6 +2759,27 @@ function examPlay(){const l=examList(10);if(!l.length)return toast('教甄單字
 function examSeen(){let k=0;for(const w of EXAM)if(save.m[w]&&save.m[w].seen)k++;return k}
 {const _dz=den;den=function(){_dz();const m=document.querySelector('.tasks .modes');if(m&&!m.querySelector('[data-a=exam]'))m.insertAdjacentHTML('beforeend',`<button data-a="exam">📒<span>教甄單字 ${examSeen()}/${EXAM.size}</span></button>`)}}
 
+// ===== 📒 每回合過半是教甄單字（回合、只學新字、複習、日記、散步、餵食、冒險）=====
+const EXQ=w=>!!w&&EXAM.has(w.w);
+function examCands(skip,kind){const t=dayNum(),m=w=>save.m[w.w]||{};let L=W.filter(w=>EXQ(w)&&!skip.has(w.w));if(kind==='diary')L=L.filter(w=>w.ex);
+ const fresh=shuffle(L.filter(w=>!m(w).seen));if(kind==='new')return fresh;
+ const bad=L.filter(w=>m(w).seen&&m(w).n),due=L.filter(w=>m(w).seen&&!m(w).n&&(m(w).due??0)<=t),soon=L.filter(w=>m(w).seen&&!m(w).n&&(m(w).due??0)>t).sort((a,b)=>(m(a).due??0)-(m(b).due??0));
+ return kind==='review'||kind==='diary'?[...bad,...due,...soon,...fresh]:[...bad,...due,...fresh,...soon]}
+function examFill(list,kind){const n=list.length,need=Math.floor(n/2)+1;let have=list.filter(EXQ).length;if(!n||have>=need)return list;
+ const cand=examCands(new Set(list.map(w=>w.w)),kind),out=list.slice();
+ for(let i=out.length-1;i>=0&&have<need&&cand.length;i--)if(!EXQ(out[i])){out[i]=cand.shift();have++}
+ return out}
+{const _nw=newWords;newWords=function(n){return examFill(_nw(n),'new')}}
+{const _tb=todayBatch;todayBatch=function(){return shuffle(examFill(_tb(),'mix'))}}
+{const _br=buildRound;buildRound=function(mode,len,list){const st=_br(mode,len,list);if(list||!['mix','new','review','diary'].includes(mode))return st;
+ const seen=new Set(),ws=[];for(const s of st)if(s.w&&!seen.has(s.w.w)){seen.add(s.w.w);ws.push(s.w)}
+ const fx=examFill(ws,mode);return fx.every((w,i)=>w===ws[i])?st:_br(mode,len,fx)}}
+{const _pw=pickWord;pickWord=function(){const r0=run.retry.length,w=_pw();if(run.retry.length<r0)return w;
+ run.exT=(run.exT||0)+1;if(EXQ(w)){run.exN=(run.exN||0)+1;return w}
+ if((run.exN||0)*2>run.exT)return w;
+ const c=examCands(new Set(run.recent.slice(-14)),'mix')[0];if(!c)return w;
+ run.recent[run.recent.length-1]=c.w;run.exN=(run.exN||0)+1;return c}}
+
 // ===== 🪢 拔河（取代分數條）=====
 // 每答一題拉 2 下，答對再多拉 1 下（練習量為主）；週一到週日一週一場，沒有追趕機制
 const TUG_MAX=54,TUG_K=60,EMO={cheer:'📣 加油！',tease:'😝 追得上嗎～',petal:'🌸 撒花給你'};
@@ -2844,7 +2865,7 @@ weekResult=function(){const cw=weekOf(dayNum());if(!SYNC.partner||(save.wkShown|
  <button class="btn gold" data-a="closeModal">這週繼續拉 🪢</button>`);modalDone=den;if(win===me)confetti();return true};
 
 // ===== 自動更新：主畫面 App 回到前景時檢查新版 =====
-const APP_VER='202611240832';
+const APP_VER='202611241937';
 async function checkUpdate(){try{if(R||$('#modalRoot').innerHTML)return;const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==APP_VER&&/^\d+$/.test(v)){if(sessionStorage.getItem('wg_upd')===v)return;sessionStorage.setItem('wg_upd',v);persist();toast('🌱 有新版本，更新中…');setTimeout(()=>location.replace(location.pathname+'?v='+v),600)}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});setTimeout(checkUpdate,1500);
