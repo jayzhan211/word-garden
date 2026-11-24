@@ -397,6 +397,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 .vase{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}.vase i{width:34px;height:44px;display:inline-block}
 .pwa{background:#eef7ff;border:2px dashed #bfe3ff;border-radius:16px;padding:8px 12px;margin:6px 0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer}
 .pwa b{flex:1}.pwa .x{color:#a493a8;padding:0 4px}
+.llist{max-height:44vh;overflow:auto;margin:6px 0;-webkit-overflow-scrolling:touch}.lrow{border-top:1px solid #f3e6ef}.lrow.on{background:var(--pinkbg);border-radius:12px}.lhead{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:7px 4px;font-size:14px;cursor:pointer}.lw{flex:1;min-width:0}.lw i{color:var(--dim);font-size:12px}.lz{transition:filter .2s}.lz.hid{filter:blur(5px)}.lst{display:flex;align-items:center;gap:4px;white-space:nowrap}.lsay{border:0;background:none;font-size:15px;padding:2px 4px}.ldet{padding:0 8px 9px;font-size:13px;line-height:1.5}.lex{margin:3px 0;font-style:italic}.lchips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0}.lchips .chip.on{background:var(--pink);border-color:var(--pinkd);color:#fff}
 .wrow{display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-top:1px solid #f3e6ef;font-size:14px}.wrow b{font-family:Georgia,serif;font-size:16px}
 .trophy{font-size:12px;text-align:center;color:#b08a2e;margin:-2px 0 6px}
 .modes{grid-template-columns:repeat(4,1fr)!important}
@@ -438,7 +439,7 @@ body.dp-dusk{background:radial-gradient(#ffd2c2 1.6px,transparent 1.7px) 0 0/24p
 <div id="flash"></div>
 <div id="toast"></div>
 <div id="modalRoot"></div>
-<script src="cloze-data.js?v=202611241937"></script>
+<script src="cloze-data.js?v=202611242056"></script>
 <script>
 // ===== WORD BANK: [word, pos, 中文, English definition, synonyms (first fits the sentence), example, 字根/陷阱] =====
 const RAW=[
@@ -2780,6 +2781,44 @@ function examFill(list,kind){const n=list.length,need=Math.floor(n/2)+1;let have
  const c=examCands(new Set(run.recent.slice(-14)),'mix')[0];if(!c)return w;
  run.recent[run.recent.length-1]=c.w;run.exN=(run.exN||0)+1;return c}}
 
+// ===== 📖 單字庫：快速瀏覽教甄單字（可搜尋、篩選、遮中文自測）=====
+const LIB={q:'',f:'all',scope:'exam',sort:'az',hide:0,open:''};
+function libWords(){
+ const q=LIB.q.trim().toLowerCase(),m=w=>save.m[w.w]||{};
+ let L=LIB.scope==='exam'?W.filter(w=>EXAM.has(w.w)):W.slice();
+ if(q)L=L.filter(w=>w.w.toLowerCase().includes(q)||(w.zh||'').includes(q));
+ if(LIB.f==='new')L=L.filter(w=>!m(w).seen);
+ else if(LIB.f==='seen')L=L.filter(w=>m(w).seen&&!m(w).n);
+ else if(LIB.f==='bad')L=L.filter(w=>m(w).seen&&(m(w).n||(m(w).x||0)>0));
+ if(LIB.sort==='weak')L.sort((a,b)=>{const x=m(a),y=m(b);return(y.n?1:0)-(x.n?1:0)||(y.x||0)-(x.x||0)||(x.seen?x.s||0:-1)-(y.seen?y.s||0:-1)||a.w.localeCompare(b.w)});
+ else L.sort((a,b)=>a.w.localeCompare(b.w));
+ return L}
+function libRow(w){
+ const m=save.m[w.w]||{},op=LIB.open===w.w,zh=esc((w.zh||'').split('；')[0]);
+ const st=!m.seen?'<span class="small" style="opacity:.55">🌱 未學</span>':m.n?'<span class="small">🥀 要救</span>':`<span class="stars small">${stars(m.s)}</span>`;
+ const ex=w.ex?esc(w.ex).replace(/_{2,}/g,`<b>${esc(w.w)}</b>`):'';
+ const syn=(Array.isArray(w.syn)?w.syn:String(w.syn||'').split('|')).filter(Boolean).slice(0,4);
+ return`<div class="lrow${op?' on':''}"><div class="lhead" data-a="libopen" data-v="${esc(w.w)}">
+ <span class="lw"><b>${esc(w.w)}</b> <i>${esc(w.p||'')}</i> <span class="lz${LIB.hide&&!op?' hid':''}">${zh}</span></span>
+ <span class="lst">${st}<button class="lsay" data-a="say" data-v="${esc(w.w)}">🔊</button></span></div>
+ ${op?`<div class="ldet"><div>${esc(w.zh||'')}</div>${w.en?`<div class="small">${esc(w.en)}</div>`:''}${syn.length?`<div class="small">≈ ${syn.map(esc).join(', ')}</div>`:''}${ex?`<div class="lex">${ex}</div>`:''}${w.rt?`<div class="small">💡 ${esc(w.rt)}</div>`:''}${m.x?`<div class="small" style="color:var(--red)">答錯過 ${m.x} 次</div>`:''}</div>`:''}</div>`}
+function libRender(){const L=libWords(),el=$('#libList'),c=$('#libCnt');if(c)c.textContent=`${L.length} 個字`;if(el)el.innerHTML=L.length?L.map(libRow).join(''):'<div class="sub" style="text-align:center;margin:14px 0">找不到符合的字</div>'}
+function wordLib(){
+ const ch=(k,v,t)=>`<button class="chip${LIB[k]===v?' on':''}" data-a="libset" data-v="${k}:${v}">${t}</button>`;
+ modalDone=null;
+ openModal(`<div class="banner" style="margin-top:0">📖 單字庫</div>
+ <input id="libQ" class="inp" placeholder="搜尋英文或中文…" value="${esc(LIB.q)}" oninput="LIB.q=this.value;LIB.open='';libRender()" autocomplete="off" autocapitalize="off" spellcheck="false">
+ <div class="lchips">${ch('scope','exam','📒 教甄 '+EXAM.size)}${ch('scope','all','🌿 全部 '+W.length)}</div>
+ <div class="lchips">${ch('f','all','全部')}${ch('f','new','🌱 未學')}${ch('f','seen','⭐ 學過')}${ch('f','bad','🥀 錯過')}</div>
+ <div class="lchips">${ch('sort','az','A→Z')}${ch('sort','weak','最弱優先')}<button class="chip${LIB.hide?' on':''}" data-a="libset" data-v="hide:${LIB.hide?0:1}">🙈 遮中文</button><span id="libCnt" class="small" style="margin-left:auto;align-self:center"></span></div>
+ <div id="libList" class="llist"></div>
+ <button class="btn gold" data-a="exam">▶ 練教甄單字</button>
+ <button class="btn ghost" data-a="closeModal">關閉</button>`);
+ libRender()}
+function libSet(v){const[k,x]=v.split(':');LIB[k]=k==='hide'?+x:x;LIB.open='';const sc=$('#libList')?$('#libList').scrollTop:0;wordLib();if(k==='hide'){const l=$('#libList');if(l)l.scrollTop=sc}}
+function libOpen(k){const l=$('#libList'),sc=l?l.scrollTop:0;LIB.open=LIB.open===k?'':k;libRender();if(l)l.scrollTop=sc;if(LIB.open)sayA(k)}
+{const _dl=den;den=function(){_dl();const x=document.querySelector('.extra');if(x&&!x.querySelector('[data-a=wlib]'))x.insertAdjacentHTML('beforeend',`<button data-a="wlib">📖 單字庫</button>`)}}
+
 // ===== 🪢 拔河（取代分數條）=====
 // 每答一題拉 2 下，答對再多拉 1 下（練習量為主）；週一到週日一週一場，沒有追趕機制
 const TUG_MAX=54,TUG_K=60,EMO={cheer:'📣 加油！',tease:'😝 追得上嗎～',petal:'🌸 撒花給你'};
@@ -2865,7 +2904,7 @@ weekResult=function(){const cw=weekOf(dayNum());if(!SYNC.partner||(save.wkShown|
  <button class="btn gold" data-a="closeModal">這週繼續拉 🪢</button>`);modalDone=den;if(win===me)confetti();return true};
 
 // ===== 自動更新：主畫面 App 回到前景時檢查新版 =====
-const APP_VER='202611241937';
+const APP_VER='202611242056';
 async function checkUpdate(){try{if(R||$('#modalRoot').innerHTML)return;const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==APP_VER&&/^\d+$/.test(v)){if(sessionStorage.getItem('wg_upd')===v)return;sessionStorage.setItem('wg_upd',v);persist();toast('🌱 有新版本，更新中…');setTimeout(()=>location.replace(location.pathname+'?v='+v),600)}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});setTimeout(checkUpdate,1500);
@@ -2893,7 +2932,7 @@ setInterval(cloudRefresh,30e3);
 const ACT={
  cloudnow:cloudNow,
  tugme:tugMe,emo:sendEmo,
- czgo:()=>startCloze(),exam:examPlay,czwrong:wrongPlay,czb:czBlank,czo:czOpt,czsub:czSubmit,czrest:czRest,wsingle:wrongSingle,wadd:wordAdd,waddok:wordAddOk,wexp:wordExport,wdel:wordDel,
+ czgo:()=>startCloze(),exam:examPlay,wlib:wordLib,libset:libSet,libopen:libOpen,czwrong:wrongPlay,czb:czBlank,czo:czOpt,czsub:czSubmit,czrest:czRest,wsingle:wrongSingle,wadd:wordAdd,waddok:wordAddOk,wexp:wordExport,wdel:wordDel,
  saytest:()=>{say('serendipity');toast(window.speechSynthesis?'🔈 有聽到嗎？聽不到請檢查靜音開關和音量':'這個瀏覽器不支援發音')},
  tm:timeMachine,tmpick:tmPick,
  glogin:googleLogin,glogout:googleLogout,
